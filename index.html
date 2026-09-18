@@ -2,461 +2,955 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Kabootar Messenger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C85A32">
+<title>🕊️ Kabootar Messenger</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0F172A;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-  }
-  .phone {
-    width: 100%;
-    max-width: 420px;
-    height: 100vh;
-    max-height: 900px;
-    background: #F8FAFC;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-  }
-  .header {
-    padding: 20px 16px 12px;
-    background: #F8FAFC;
-    border-bottom: 1px solid #E2E8F0;
-  }
-  .header h1 {
-    font-size: 28px;
-    font-weight: 800;
-    color: #0F172A;
-    letter-spacing: -0.5px;
-  }
-  .search {
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    background: #FFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 10px 14px;
-  }
-  .search input {
-    flex: 1;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    color: #0F172A;
-    background: transparent;
-  }
-  .search input::placeholder { color: #94A3B8; }
-  .filters {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .filters::-webkit-scrollbar { display: none; }
-  .filter {
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 12px;
-    font-weight: 600;
-    background: #FFF;
-    border: 1px solid #E2E8F0;
-    color: #475569;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .filter.active {
-    background: #0F172A;
-    color: #FFF;
-    border-color: #0F172A;
-  }
-  .content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0 80px;
-  }
-  .item {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    margin: 0 12px 4px;
-    background: #FFF;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-  .item:active { transform: scale(0.98); }
-  .avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: #C85A32;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFF;
-    font-weight: 700;
-    font-size: 18px;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .info { flex: 1; margin-left: 12px; min-width: 0; }
-  .row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .name { font-weight: 600; color: #0F172A; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .time { font-size: 11px; color: #94A3B8; flex-shrink: 0; }
-  .preview { color: #64748B; font-size: 13px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
-  .badge {
-    background: #C85A32;
-    color: #FFF;
-    font-size: 11px;
-    font-weight: 700;
-    min-width: 22px;
-    height: 22px;
-    border-radius: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    margin-left: 6px;
-  }
-  .tick { font-size: 13px; }
-  .tick.read { color: #10B981; }
-  .tick.delivered { color: #94A3B8; }
-  .pin { font-size: 11px; color: #94A3B8; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: #0F172A;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #0F172A;
+}
+.phone {
+  width: 100vw;
+  max-width: 430px;
+  height: 100vh;
+  max-height: 932px;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+@media (min-width: 500px) {
+  .phone { border-radius: 40px; height: 92vh; }
+}
 
-  /* Bottom tabs */
-  .tabs {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 68px;
-    background: #FFF;
-    border-top: 1px solid #E2E8F0;
-    display: flex;
-    align-items: center;
-    padding-bottom: 4px;
-  }
-  .tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    cursor: pointer;
-    color: #94A3B8;
-    position: relative;
-  }
-  .tab.active { color: #C85A32; }
-  .tab-icon { font-size: 22px; }
-  .tab-label { font-size: 11px; font-weight: 600; }
-  .tab-badge {
-    position: absolute;
-    top: -2px;
-    right: 50%;
-    transform: translateX(14px);
-    background: #C85A32;
-    color: #FFF;
-    font-size: 9px;
-    font-weight: 700;
-    min-width: 16px;
-    height: 16px;
-    border-radius: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4px;
-  }
+/* ---------- Top Bar ---------- */
+.top-bar {
+  background: #C85A32;
+  color: #FFF;
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.top-bar .logo { font-size: 22px; }
+.top-bar .title { font-size: 17px; font-weight: 700; flex: 1; letter-spacing: -0.3px; }
+.top-bar .icon-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer;
+  transition: background 0.15s;
+}
+.top-bar .icon-btn:active { background: rgba(255,255,255,0.3); }
 
-  /* Chat room */
-  .chat-room {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #F8FAFC;
-    display: none;
-    flex-direction: column;
-    z-index: 10;
-  }
-  .chat-room.open { display: flex; }
-  .chat-header {
-    display: flex;
-    align-items: center;
-    padding: 14px 12px;
-    background: #FFF;
-    border-bottom: 1px solid #E2E8F0;
-    gap: 8px;
-  }
-  .back-btn {
-    font-size: 24px;
-    color: #0F172A;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-weight: 300;
-  }
-  .chat-title { flex: 1; min-width: 0; }
-  .chat-title .name { font-size: 16px; }
-  .chat-title .status { font-size: 11px; color: #64748B; margin-top: 2px; }
-  .chat-icon { font-size: 20px; color: #C85A32; padding: 4px; cursor: pointer; }
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .bubble {
-    max-width: 78%;
-    padding: 8px 12px;
-    border-radius: 18px;
-    font-size: 15px;
-    line-height: 1.35;
-    word-wrap: break-word;
-    position: relative;
-  }
-  .bubble.in {
-    background: #FFF;
-    color: #0F172A;
-    align-self: flex-start;
-    border-bottom-left-radius: 6px;
-  }
-  .bubble.out {
-    background: #C85A32;
-    color: #FFF;
-    align-self: flex-end;
-    border-bottom-right-radius: 6px;
-  }
-  .bubble-meta {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-    margin-top: 4px;
-    font-size: 10px;
-  }
-  .bubble.out .bubble-meta { color: rgba(255,255,255,0.75); }
-  .bubble.in .bubble-meta { color: #94A3B8; }
-  .input-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: #FFF;
-    border-top: 1px solid #E2E8F0;
-  }
-  .input-bar input {
-    flex: 1;
-    border: none;
-    outline: none;
-    background: #F1F5F9;
-    padding: 12px 16px;
-    border-radius: 24px;
-    font-size: 15px;
-    color: #0F172A;
-  }
-  .send-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #C85A32;
-    color: #FFF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    border: none;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
+/* ---------- Tab Content ---------- */
+.tab-content { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+.tab-content.active { display: flex; }
 
-  /* Profile */
-  .profile-card {
-    margin: 8px 16px 16px;
-    padding: 24px 20px;
-    background: #FFF;
-    border-radius: 24px;
-    text-align: center;
-  }
-  .profile-card .avatar { margin: 0 auto 12px; width: 88px; height: 88px; font-size: 32px; }
-  .profile-card h2 { font-size: 20px; color: #0F172A; margin-bottom: 4px; }
-  .profile-card p { font-size: 14px; color: #64748B; }
-  .section-title {
-    padding: 16px 16px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-  }
-  .settings-row {
-    display: flex;
-    align-items: center;
-    padding: 14px 16px;
-    background: #FFF;
-    border-bottom: 1px solid #F1F5F9;
-    cursor: pointer;
-  }
-  .settings-row:last-child { border-bottom: none; }
-  .settings-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: #F1F5F9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 12px;
-    font-size: 16px;
-  }
-  .settings-label { flex: 1; font-size: 15px; color: #0F172A; }
-  .chev { color: #CBD5E1; font-size: 20px; }
-  .settings-group {
-    margin: 0 16px 8px;
-    background: #FFF;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-  .logout {
-    margin: 16px;
-    padding: 16px;
-    background: #FEF2F2;
-    border-radius: 16px;
-    text-align: center;
-    color: #EF4444;
-    font-weight: 600;
-    cursor: pointer;
-  }
+/* ---------- Headers ---------- */
+.screen-header {
+  padding: 20px 16px 12px;
+  background: #F8FAFC;
+  flex-shrink: 0;
+}
+.screen-header h1 {
+  font-size: 30px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.8px;
+  line-height: 1;
+}
+.screen-header .sub {
+  font-size: 13px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+/* ---------- Search ---------- */
+.search {
+  display: flex;
+  align-items: center;
+  background: #FFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin-top: 12px;
+  gap: 8px;
+}
+.search .icon { font-size: 15px; color: #94A3B8; }
+.search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #0F172A;
+  background: transparent;
+  font-family: inherit;
+}
+.search input::placeholder { color: #94A3B8; }
+
+/* ---------- Filter Chips ---------- */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.filters::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #FFF;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.chip.active {
+  background: #0F172A;
+  color: #FFF;
+  border-color: #0F172A;
+}
+
+/* ---------- Content List ---------- */
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 90px;
+  -webkit-overflow-scrolling: touch;
+}
+.list::-webkit-scrollbar { width: 0; }
+
+/* ---------- List Item ---------- */
+.item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin: 0 12px 4px;
+  background: #FFF;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+}
+.item:active { transform: scale(0.98); background: #F1F5F9; }
+
+.avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: #C85A32;
+  display: flex; align-items: center; justify-content: center;
+  color: #FFF;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.sm { width: 40px; height: 40px; font-size: 14px; }
+.avatar.lg { width: 88px; height: 88px; font-size: 32px; }
+.avatar .online-dot {
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 14px; height: 14px;
+  background: #10B981;
+  border-radius: 50%;
+  border: 2px solid #FFF;
+}
+
+.info { flex: 1; margin-left: 12px; min-width: 0; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.name {
+  font-weight: 600; color: #0F172A; font-size: 15px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1;
+}
+.time { font-size: 11px; color: #94A3B8; flex-shrink: 0; }
+.preview {
+  color: #64748B; font-size: 13px; margin-top: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
+}
+.badge {
+  background: #C85A32; color: #FFF;
+  font-size: 11px; font-weight: 700;
+  min-width: 22px; height: 22px;
+  border-radius: 100px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 6px; margin-left: 6px;
+  flex-shrink: 0;
+}
+.tick { font-size: 13px; flex-shrink: 0; }
+.tick.read { color: #10B981; }
+.tick.delivered { color: #94A3B8; }
+.pin { font-size: 12px; color: #94A3B8; }
+
+/* ---------- Story Ring ---------- */
+.story-tray {
+  display: flex;
+  gap: 14px;
+  padding: 8px 16px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.story-tray::-webkit-scrollbar { display: none; }
+.story-ring {
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; flex-shrink: 0; width: 72px;
+}
+.story-ring .circle {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  padding: 3px;
+  background: #C85A32;
+  transition: transform 0.15s;
+}
+.story-ring:active .circle { transform: scale(0.95); }
+.story-ring.viewed .circle { background: #CBD5E1; }
+.story-ring .inner {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  padding: 2px;
+  background: #FFF;
+}
+.story-ring .inner .avatar {
+  width: 100% !important; height: 100% !important;
+  font-size: 22px;
+}
+.story-ring .label {
+  font-size: 12px;
+  color: #334155;
+  margin-top: 6px;
+  font-weight: 500;
+  text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  width: 100%;
+}
+.story-ring.add .circle { background: #CBD5E1; }
+.story-ring.add .inner { display: flex; align-items: center; justify-content: center; font-size: 26px; color: #C85A32; font-weight: 700; }
+
+/* ---------- Bottom Tabs ---------- */
+.tabs {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 68px;
+  background: #FFF;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  padding-bottom: 4px;
+  z-index: 5;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  color: #94A3B8;
+  position: relative;
+  padding-top: 8px;
+  transition: color 0.15s;
+}
+.tab.active { color: #C85A32; }
+.tab-icon { font-size: 22px; line-height: 1; }
+.tab-label { font-size: 11px; font-weight: 600; }
+.tab-badge {
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  transform: translateX(14px);
+  background: #C85A32;
+  color: #FFF;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ---------- FAB ---------- */
+.fab {
+  position: absolute;
+  bottom: 84px;
+  right: 20px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: #C85A32;
+  color: #FFF;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 8px 20px rgba(200, 90, 50, 0.4);
+  cursor: pointer;
+  z-index: 6;
+  transition: transform 0.15s;
+}
+.fab:active { transform: scale(0.9); }
+
+/* ---------- Chat Room ---------- */
+.chat-room {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #F8FAFC;
+  display: none;
+  flex-direction: column;
+  z-index: 100;
+}
+.chat-room.open { display: flex; }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 12px;
+  background: #FFF;
+  border-bottom: 1px solid #E2E8F0;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.back-btn {
+  font-size: 24px;
+  color: #0F172A;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-weight: 300;
+  line-height: 1;
+}
+.chat-title { flex: 1; min-width: 0; }
+.chat-title .name {
+  font-size: 16px; font-weight: 700; color: #0F172A;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chat-title .status { font-size: 11px; color: #64748B; margin-top: 2px; }
+.chat-icon {
+  font-size: 20px; color: #C85A32;
+  padding: 6px;
+  cursor: pointer;
+}
+.chat-icon:active { opacity: 0.6; }
+
+.e2ee-banner {
+  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 16px;
+  text-align: center;
+  font-size: 11px;
+  color: #10B981;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.messages::-webkit-scrollbar { width: 0; }
+
+.bubble {
+  max-width: 78%;
+  padding: 8px 12px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.35;
+  word-wrap: break-word;
+  position: relative;
+  animation: bubbleIn 0.2s ease-out;
+}
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bubble.in {
+  background: #FFF;
+  color: #0F172A;
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+}
+.bubble.out {
+  background: #C85A32;
+  color: #FFF;
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+}
+.bubble-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.bubble.out .bubble-meta { color: rgba(255,255,255,0.75); }
+.bubble.in .bubble-meta { color: #94A3B8; }
+.bubble .voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+.bubble .voice-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  flex: 1;
+}
+.bubble .voice-bars span {
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+/* ---------- Reactions Bar ---------- */
+.reactions-bar {
+  display: none;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #FFF;
+  border-top: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+.reactions-bar.open { display: flex; }
+.reaction-btn {
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.reaction-btn:active { background: #F1F5F9; transform: scale(1.2); }
+
+/* ---------- Input Bar ---------- */
+.input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #FFF;
+  border-top: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+.input-bar .add-btn {
+  font-size: 24px;
+  color: #64748B;
+  padding: 6px;
+  cursor: pointer;
+  line-height: 1;
+}
+.input-bar .input-wrap {
+  flex: 1;
+  background: #F1F5F9;
+  border-radius: 24px;
+  padding: 10px 16px;
+  min-height: 42px;
+  max-height: 120px;
+  display: flex;
+  align-items: center;
+}
+.input-bar input, .input-bar textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #0F172A;
+  font-family: inherit;
+  resize: none;
+  max-height: 100px;
+  line-height: 1.3;
+}
+.send-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: #C85A32;
+  color: #FFF;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.send-btn:active { transform: scale(0.9); }
+
+/* ---------- Story Viewer ---------- */
+.story-viewer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #000;
+  display: none;
+  z-index: 200;
+  flex-direction: column;
+}
+.story-viewer.open { display: flex; }
+.story-progress {
+  position: absolute;
+  top: 54px; left: 12px; right: 12px;
+  height: 3px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 100px;
+  z-index: 3;
+  overflow: hidden;
+}
+.story-progress .bar {
+  height: 100%;
+  background: #FFF;
+  border-radius: 100px;
+  width: 0%;
+  animation: progressBar 5s linear forwards;
+}
+@keyframes progressBar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.story-header {
+  position: absolute;
+  top: 72px; left: 12px; right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 3;
+}
+.story-header .name { color: #FFF; font-weight: 600; font-size: 15px; flex: 1; }
+.story-header .close-btn {
+  color: #FFF;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+.story-image {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.story-caption {
+  position: absolute;
+  top: 50%;
+  left: 0; right: 0;
+  transform: translateY(-50%);
+  color: #FFF;
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 32px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  z-index: 3;
+}
+.story-reply {
+  position: absolute;
+  bottom: 24px;
+  left: 12px; right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 3;
+}
+.story-reply .input {
+  flex: 1;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 100px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(12px);
+}
+.story-reply input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #FFF;
+  font-size: 15px;
+  font-family: inherit;
+}
+.story-reply input::placeholder { color: rgba(255,255,255,0.7); }
+.story-reply .emoji-btn {
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* ---------- Profile ---------- */
+.profile-card {
+  margin: 8px 16px 16px;
+  padding: 24px 20px;
+  background: #FFF;
+  border-radius: 24px;
+  text-align: center;
+}
+.profile-card .avatar { margin: 0 auto 12px; }
+.profile-card h2 { font-size: 22px; color: #0F172A; margin-bottom: 4px; font-weight: 700; }
+.profile-card p { font-size: 14px; color: #64748B; margin-bottom: 4px; }
+.profile-card .handle { font-size: 13px; color: #C85A32; font-weight: 600; }
+.profile-card .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.profile-card .actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 14px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.profile-card .actions .primary { background: rgba(200,90,50,0.1); color: #C85A32; }
+.profile-card .actions .secondary { background: #F1F5F9; color: #1E293B; }
+
+.section-title {
+  padding: 16px 16px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.settings-group {
+  margin: 0 16px 8px;
+  background: #FFF;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row:active { background: #F8FAFC; }
+.settings-icon {
+  width: 36px; height: 36px;
+  border-radius: 12px;
+  background: #F1F5F9;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 12px;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.settings-label { flex: 1; font-size: 15px; color: #0F172A; }
+.settings-value { font-size: 13px; color: #94A3B8; margin-right: 6px; }
+.chev { color: #CBD5E1; font-size: 20px; line-height: 1; }
+.logout {
+  margin: 16px;
+  padding: 16px;
+  background: #FEF2F2;
+  border-radius: 16px;
+  text-align: center;
+  color: #EF4444;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+}
+.logout:active { background: #FEE2E2; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.95);
+  color: #FFF;
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.25s;
+  pointer-events: none;
+  z-index: 999;
+  backdrop-filter: blur(12px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- Empty State ---------- */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94A3B8;
+}
+.empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty p { font-size: 14px; }
+
+/* ---------- Scroll padding for tabs ---------- */
+.tab-content .list { padding-bottom: 90px; }
 </style>
 </head>
 <body>
 
 <div class="phone">
-  <!-- Chats Tab -->
-  <div id="tab-chats" class="tab-content">
-    <div class="header">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <span class="logo">🕊️</span>
+    <span class="title">Kabootar</span>
+    <div class="icon-btn" onclick="showToast('Search feature coming soon')">🔍</div>
+    <div class="icon-btn" onclick="showToast('New chat feature coming soon')">✏️</div>
+  </div>
+
+  <!-- CHATS TAB -->
+  <div id="tab-chats" class="tab-content active">
+    <div class="screen-header">
       <h1>Chats</h1>
       <div class="search">
-        <span>🔍</span>
-        <input type="text" placeholder="Search chats" oninput="filterList(this.value)">
+        <span class="icon">🔍</span>
+        <input type="text" id="chat-search" placeholder="Search chats" oninput="renderChats()">
       </div>
       <div class="filters">
-        <div class="filter active" onclick="setFilter('all', this)">All</div>
-        <div class="filter" onclick="setFilter('unread', this)">Unread</div>
-        <div class="filter" onclick="setFilter('personal', this)">Personal</div>
-        <div class="filter" onclick="setFilter('work', this)">Work</div>
+        <div class="chip active" onclick="setChatFilter('all', this)">All</div>
+        <div class="chip" onclick="setChatFilter('unread', this)">Unread</div>
+        <div class="chip" onclick="setChatFilter('personal', this)">Personal</div>
+        <div class="chip" onclick="setChatFilter('work', this)">Work</div>
       </div>
     </div>
-    <div class="content" id="chats-list"></div>
+    <div class="list" id="chats-list"></div>
+    <div class="fab" onclick="showToast('Start new chat')">✏️</div>
   </div>
 
-  <!-- Contacts Tab -->
-  <div id="tab-contacts" class="tab-content" style="display:none">
-    <div class="header">
+  <!-- STORIES TAB -->
+  <div id="tab-stories" class="tab-content">
+    <div class="screen-header">
+      <h1>Stories</h1>
+      <div class="sub">Status that fades in 24 hours</div>
+    </div>
+    <div class="story-tray" id="story-tray"></div>
+    <div class="list" style="padding-top:0" id="stories-viewed-list"></div>
+  </div>
+
+  <!-- CONTACTS TAB -->
+  <div id="tab-contacts" class="tab-content">
+    <div class="screen-header">
       <h1>Contacts</h1>
       <div class="search">
-        <span>🔍</span>
-        <input type="text" placeholder="Search contacts">
+        <span class="icon">🔍</span>
+        <input type="text" id="contact-search" placeholder="Search contacts" oninput="renderContacts()">
       </div>
     </div>
-    <div class="content" id="contacts-list"></div>
+    <div class="list" id="contacts-list"></div>
   </div>
 
-  <!-- Calls Tab -->
-  <div id="tab-calls" class="tab-content" style="display:none">
-    <div class="header">
+  <!-- CALLS TAB -->
+  <div id="tab-calls" class="tab-content">
+    <div class="screen-header">
       <h1>Calls</h1>
-      <div class="filters" style="margin-top: 12px">
-        <div class="filter active" onclick="setCallFilter('all', this)">All Calls</div>
-        <div class="filter" onclick="setCallFilter('missed', this)">Missed</div>
+      <div class="filters">
+        <div class="chip active" onclick="setCallFilter('all', this)">All Calls</div>
+        <div class="chip" onclick="setCallFilter('missed', this)">Missed</div>
       </div>
     </div>
-    <div class="content" id="calls-list"></div>
+    <div class="list" id="calls-list"></div>
   </div>
 
-  <!-- Profile Tab -->
-  <div id="tab-profile" class="tab-content" style="display:none">
-    <div class="header"><h1>Profile</h1></div>
-    <div class="content">
+  <!-- PROFILE TAB -->
+  <div id="tab-profile" class="tab-content">
+    <div class="list" style="padding-top:0">
+      <div class="screen-header" style="padding-bottom:8px"><h1>Profile</h1></div>
       <div class="profile-card">
-        <div class="avatar">AS</div>
+        <div class="avatar lg">AS</div>
         <h2>Aarav Sharma</h2>
-        <p>Building Kabootar 🕊️</p>
+        <p>Building Kabootar 🕊️ • Privacy first</p>
+        <div class="handle">@kb_aarav_01</div>
+        <div class="actions">
+          <button class="primary" onclick="showQRModal()">📱 Show QR</button>
+          <button class="secondary" onclick="showToast('Edit profile')">✏️ Edit</button>
+        </div>
       </div>
+
       <div class="section-title">Account</div>
       <div class="settings-group">
-        <div class="settings-row"><div class="settings-icon">👤</div><div class="settings-label">Edit Profile</div><div class="chev">›</div></div>
-        <div class="settings-row"><div class="settings-icon">🔒</div><div class="settings-label">Privacy</div><div class="chev">›</div></div>
-        <div class="settings-row"><div class="settings-icon">🛡️</div><div class="settings-label">Security</div><div class="chev">›</div></div>
+        <div class="settings-row" onclick="showToast('Edit Profile')">
+          <div class="settings-icon">👤</div><div class="settings-label">Edit Profile</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Privacy settings')">
+          <div class="settings-icon">🔒</div><div class="settings-label">Privacy</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Security settings')">
+          <div class="settings-icon">🛡️</div><div class="settings-label">Security</div><div class="chev">›</div>
+        </div>
       </div>
+
       <div class="section-title">Chats</div>
       <div class="settings-group">
-        <div class="settings-row"><div class="settings-icon">🖼️</div><div class="settings-label">Wallpaper</div><div class="chev">›</div></div>
-        <div class="settings-row"><div class="settings-icon">☁️</div><div class="settings-label">Chat Backup</div><div class="chev">›</div></div>
-        <div class="settings-row"><div class="settings-icon">⏱️</div><div class="settings-label">Disappearing Messages</div><div class="chev">›</div></div>
+        <div class="settings-row" onclick="showToast('Wallpaper')">
+          <div class="settings-icon">🖼️</div><div class="settings-label">Wallpaper</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Chat Backup')">
+          <div class="settings-icon">☁️</div><div class="settings-label">Chat Backup</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Disappearing Messages')">
+          <div class="settings-icon">⏱️</div><div class="settings-label">Disappearing Messages</div><div class="settings-value">Off</div><div class="chev">›</div>
+        </div>
       </div>
+
+      <div class="section-title">Notifications</div>
+      <div class="settings-group">
+        <div class="settings-row" onclick="showToast('Notifications')">
+          <div class="settings-icon">🔔</div><div class="settings-label">Message Notifications</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Call Ringtone')">
+          <div class="settings-icon">📞</div><div class="settings-label">Call Ringtone</div><div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="section-title">Storage & Data</div>
+      <div class="settings-group">
+        <div class="settings-row" onclick="showToast('Manage Storage')">
+          <div class="settings-icon">📁</div><div class="settings-label">Manage Storage</div><div class="settings-value">1.2 GB</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Network Usage')">
+          <div class="settings-icon">📊</div><div class="settings-label">Network Usage</div><div class="chev">›</div>
+        </div>
+      </div>
+
       <div class="section-title">App</div>
       <div class="settings-group">
-        <div class="settings-row"><div class="settings-icon">🌐</div><div class="settings-label">Language</div><div class="chev">›</div></div>
-        <div class="settings-row"><div class="settings-icon">💻</div><div class="settings-label">Linked Devices</div><div class="chev">›</div></div>
-        <div class="settings-row"><div class="settings-icon">❓</div><div class="settings-label">Help & Support</div><div class="chev">›</div></div>
+        <div class="settings-row" onclick="showToast('App Language')">
+          <div class="settings-icon">🌐</div><div class="settings-label">App Language</div><div class="settings-value">English</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Linked Devices')">
+          <div class="settings-icon">💻</div><div class="settings-label">Linked Devices</div><div class="chev">›</div>
+        </div>
+        <div class="settings-row" onclick="showToast('Help & Support')">
+          <div class="settings-icon">❓</div><div class="settings-label">Help & Support</div><div class="chev">›</div>
+        </div>
       </div>
-      <div class="logout" onclick="alert('Logged out!')">Log Out</div>
+
+      <div class="logout" onclick="if(confirm('Log out from Kabootar?')) showToast('Logged out')">Log Out</div>
     </div>
   </div>
 
   <!-- Bottom Tabs -->
   <div class="tabs">
-    <div class="tab" onclick="switchTab('contacts', this)"><div class="tab-icon">👥</div><div class="tab-label">Contacts</div></div>
-    <div class="tab active" onclick="switchTab('chats', this)"><div class="tab-icon">💬</div><div class="tab-label">Chats</div><div class="tab-badge">7</div></div>
-    <div class="tab" onclick="switchTab('calls', this)"><div class="tab-icon">📞</div><div class="tab-label">Calls</div></div>
-    <div class="tab" onclick="switchTab('profile', this)"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+    <div class="tab" onclick="switchTab('contacts', this)">
+      <div class="tab-icon">👥</div><div class="tab-label">Contacts</div>
+    </div>
+    <div class="tab" onclick="switchTab('stories', this)">
+      <div class="tab-icon">📖</div><div class="tab-label">Stories</div>
+    </div>
+    <div class="tab active" onclick="switchTab('chats', this)">
+      <div class="tab-icon">💬</div><div class="tab-label">Chats</div>
+      <div class="tab-badge" id="total-badge">7</div>
+    </div>
+    <div class="tab" onclick="switchTab('calls', this)">
+      <div class="tab-icon">📞</div><div class="tab-label">Calls</div>
+    </div>
+    <div class="tab" onclick="switchTab('profile', this)">
+      <div class="tab-icon">👤</div><div class="tab-label">Profile</div>
+    </div>
   </div>
 
   <!-- Chat Room Overlay -->
-  <div id="chat-room" class="chat-room">
+  <div class="chat-room" id="chat-room">
     <div class="chat-header">
       <div class="back-btn" onclick="closeChat()">←</div>
-      <div class="avatar" id="chat-avatar" style="width:40px;height:40px;font-size:14px">?</div>
+      <div class="avatar sm" id="chat-avatar">?</div>
       <div class="chat-title">
         <div class="name" id="chat-name">Chat</div>
         <div class="status">🔒 End-to-end encrypted</div>
       </div>
-      <div class="chat-icon">📞</div>
-      <div class="chat-icon">📹</div>
+      <div class="chat-icon" onclick="showToast('Audio call feature')">📞</div>
+      <div class="chat-icon" onclick="showToast('Video call feature')">📹</div>
     </div>
+    <div class="e2ee-banner">🔒 Messages are end-to-end encrypted</div>
     <div class="messages" id="messages"></div>
+    <div class="reactions-bar" id="reactions-bar">
+      <button class="reaction-btn" onclick="react('❤️')">❤️</button>
+      <button class="reaction-btn" onclick="react('😂')">😂</button>
+      <button class="reaction-btn" onclick="react('👍')">👍</button>
+      <button class="reaction-btn" onclick="react('😮')">😮</button>
+      <button class="reaction-btn" onclick="react('😢')">😢</button>
+      <button class="reaction-btn" onclick="react('🙏')">🙏</button>
+    </div>
     <div class="input-bar">
-      <input type="text" id="msg-input" placeholder="Message" onkeypress="if(event.key==='Enter') sendMsg()">
+      <div class="add-btn" onclick="showToast('Attachments menu')">➕</div>
+      <div class="input-wrap">
+        <input type="text" id="msg-input" placeholder="Message" 
+               onkeypress="if(event.key==='Enter') sendMsg()"
+               onfocus="hideReactions()">
+      </div>
       <button class="send-btn" onclick="sendMsg()">➤</button>
     </div>
   </div>
+
+  <!-- Story Viewer -->
+  <div class="story-viewer" id="story-viewer">
+    <div class="story-progress"><div class="bar" id="story-bar"></div></div>
+    <div class="story-header">
+      <div class="avatar sm" id="story-avatar">?</div>
+      <div class="name" id="story-name">User</div>
+      <div class="close-btn" onclick="closeStory()">✕</div>
+    </div>
+    <img class="story-image" id="story-image" src="" alt="">
+    <div class="story-caption" id="story-caption"></div>
+    <div class="story-reply">
+      <div class="input">
+        <input type="text" placeholder="Reply to story..." id="story-reply-input">
+        <span class="emoji-btn" onclick="showToast('Reactions drawer')">😊</span>
+      </div>
+      <div class="send-btn" onclick="showToast('Reply sent!')">➤</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
 </div>
 
 <script>
+/* ==================== DATA ==================== */
 const chats = [
-  { id: 1, name: "Priya Patel", avatar: "https://i.pravatar.cc/150?u=priya", last: "Sent the deck, check when free 🙌", time: "5m", unread: 2, pinned: true, status: "read", category: "personal" },
-  { id: 2, name: "Kabootar Core", avatar: "https://i.pravatar.cc/150?u=core", last: "Poll closed — Agora wins 🚀", time: "30m", unread: 5, pinned: true, status: "delivered", category: "work" },
-  { id: 3, name: "Aarav Sharma", avatar: "https://i.pravatar.cc/150?u=aarav", last: "🎙️ Voice note", time: "3h", unread: 0, pinned: false, status: "read", category: "personal" },
-  { id: 4, name: "Design Squad", avatar: "https://i.pravatar.cc/150?u=design", last: "New terracotta palette 🧡", time: "6h", unread: 0, pinned: false, status: "read", category: "work" },
-  { id: 5, name: "Rohan Gupta", avatar: "https://i.pravatar.cc/150?u=rohan", last: "Let's sync at 5?", time: "yesterday", unread: 0, pinned: false, status: "read", category: "personal" },
+  { id: 1, name: "Priya Patel", avatar: "https://i.pravatar.cc/150?u=priya", 
+    last: "Sent the deck, check when free 🙌", time: "5m", unread: 2, pinned: true, 
+    status: "read", category: "personal", online: true },
+  { id: 2, name: "Kabootar Core", avatar: "https://i.pravatar.cc/150?u=core", 
+    last: "Poll closed — Agora wins 🚀", time: "30m", unread: 5, pinned: true, 
+    status: "delivered", category: "work" },
+  { id: 3, name: "Aarav Sharma", avatar: "https://i.pravatar.cc/150?u=aarav", 
+    last: "🎙️ Voice note", time: "3h", unread: 0, pinned: false, 
+    status: "read", category: "personal" },
+  { id: 4, name: "Design Squad", avatar: "https://i.pravatar.cc/150?u=design", 
+    last: "New terracotta palette 🧡", time: "6h", unread: 0, pinned: false, 
+    status: "read", category: "work" },
+  { id: 5, name: "Rohan Gupta", avatar: "https://i.pravatar.cc/150?u=rohan", 
+    last: "Let's sync at 5?", time: "yesterday", unread: 0, pinned: false, 
+    status: "read", category: "personal" },
 ];
 
 const contacts = [
@@ -464,8 +958,10 @@ const contacts = [
   { name: "Priya Patel", sub: "kb_priya", avatar: "https://i.pravatar.cc/150?u=priya", reg: true },
   { name: "Rohan Gupta", sub: "kb_rohan", avatar: "https://i.pravatar.cc/150?u=rohan", reg: true },
   { name: "Neha Verma", sub: "kb_neha", avatar: "https://i.pravatar.cc/150?u=neha", reg: true },
+  { name: "Kabir Singh", sub: "kb_kabir", avatar: "https://i.pravatar.cc/150?u=kabir", reg: true },
   { name: "Meera Iyer", sub: "+91 98765 11111", avatar: "https://i.pravatar.cc/150?u=meera", reg: false },
   { name: "Vikram Rao", sub: "+91 98765 22222", avatar: "https://i.pravatar.cc/150?u=vikram", reg: false },
+  { name: "Zoya Khan", sub: "+91 98765 33333", avatar: "https://i.pravatar.cc/150?u=zoya", reg: false },
 ];
 
 const calls = [
@@ -473,169 +969,504 @@ const calls = [
   { name: "Rohan Gupta", avatar: "https://i.pravatar.cc/150?u=rohan", type: "audio", status: "missed", time: "2h", duration: "" },
   { name: "Kabootar Core", avatar: "https://i.pravatar.cc/150?u=core", type: "video", status: "outgoing", time: "5h", duration: "30:20" },
   { name: "Neha Verma", avatar: "https://i.pravatar.cc/150?u=neha", type: "audio", status: "missed", time: "1h", duration: "" },
+  { name: "Aarav Sharma", avatar: "https://i.pravatar.cc/150?u=aarav", type: "video", status: "incoming", time: "yesterday", duration: "12:40" },
+];
+
+const stories = [
+  { id: 1, name: "Priya", avatar: "https://i.pravatar.cc/150?u=priya", 
+    image: "https://picsum.photos/seed/s1/600/1000", caption: "Mumbai mornings 🌤️", viewed: false },
+  { id: 2, name: "Rohan", avatar: "https://i.pravatar.cc/150?u=rohan", 
+    image: "https://picsum.photos/seed/s2/600/1000", caption: "Shipping day 🚀", viewed: false },
+  { id: 3, name: "Aarav", avatar: "https://i.pravatar.cc/150?u=aarav", 
+    image: "https://picsum.photos/seed/s3/600/1000", caption: "Weekend vibes", viewed: false },
+  { id: 4, name: "Neha", avatar: "https://i.pravatar.cc/150?u=neha", 
+    image: "https://picsum.photos/seed/s4/600/1000", viewed: true },
+  { id: 5, name: "Kabir", avatar: "https://i.pravatar.cc/150?u=kabir", 
+    image: "https://picsum.photos/seed/s5/600/1000", caption: "New palette study", viewed: true },
 ];
 
 const messagesDB = {
   "Priya Patel": [
+    { text: "Hey! How's the project going?", own: false, time: "2:30", status: "read" },
+    { text: "Almost done! Working on the chat UI now", own: true, time: "2:32", status: "read" },
     { text: "Sent the deck, check when free 🙌", own: false, time: "2:40", status: "read" },
     { text: "Awesome, will review tonight ✨", own: true, time: "2:45", status: "read" },
-    { text: "Can you share revised pitch?", own: true, time: "2:35", status: "read" },
+    { text: "Can you share revised pitch?", own: true, time: "2:47", status: "read" },
   ],
   "Kabootar Core": [
-    { text: "Poll closed — Agora wins 🚀", own: false, time: "11:30", status: "delivered" },
-    { text: "Agora integration looks clean", own: true, time: "11:35", status: "read" },
+    { text: "Which calling stack for v1?", own: false, time: "11:20", status: "read" },
+    { text: "Agora vs LiveKit poll is live", own: false, time: "11:25", status: "read" },
+    { text: "Agora integration looks clean", own: true, time: "11:30", status: "read" },
+    { text: "Poll closed — Agora wins 🚀", own: false, time: "11:35", status: "delivered" },
+  ],
+  "Aarav Sharma": [
+    { text: "", own: true, time: "9:15", status: "read", voice: true, voiceDuration: 14 },
+    { text: "Got it, sounds good", own: false, time: "9:20", status: "read" },
+  ],
+  "Design Squad": [
+    { text: "New terracotta palette 🧡", own: false, time: "6:10", status: "read" },
+    { text: "Loving the direction!", own: false, time: "6:12", status: "read" },
+  ],
+  "Rohan Gupta": [
+    { text: "Let's sync at 5?", own: false, time: "yesterday", status: "read" },
+    { text: "Works for me 👍", own: true, time: "yesterday", status: "read" },
   ],
 };
 
-let currentFilter = "all";
-let currentSearch = "";
+/* ==================== STATE ==================== */
+let currentChatFilter = "all";
 let currentCallFilter = "all";
 let currentChatName = "";
+let currentMsgReactionTarget = null;
 
+/* ==================== RENDER: CHATS ==================== */
 function renderChats() {
   const list = document.getElementById("chats-list");
+  const q = (document.getElementById("chat-search").value || "").toLowerCase();
+  
   const filtered = chats.filter(c => {
-    if (currentFilter === "unread" && c.unread === 0) return false;
-    if (currentFilter === "personal" && c.category !== "personal") return false;
-    if (currentFilter === "work" && c.category !== "work") return false;
-    if (currentSearch && !c.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+    if (currentChatFilter === "unread" && c.unread === 0) return false;
+    if (currentChatFilter === "personal" && c.category !== "personal") return false;
+    if (currentChatFilter === "work" && c.category !== "work") return false;
+    if (q && !c.name.toLowerCase().includes(q)) return false;
     return true;
   }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
-  list.innerHTML = filtered.map(c => `
-    <div class="item" onclick="openChat('${c.name}')">
-      <div class="avatar"><img src="${c.avatar}" alt="${c.name}"></div>
-      <div class="info">
-        <div class="row">
-          <div class="name">${c.name}</div>
-          <div class="time">${c.time}</div>
-          ${c.pinned ? '<div class="pin">📌</div>' : ''}
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="icon">💬</div><p>No chats found</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(c => {
+    const initials = c.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+    const preview = c.status === "read" 
+      ? `<span class="tick read">✓✓</span>${c.last}`
+      : c.status === "delivered"
+      ? `<span class="tick delivered">✓✓</span>${c.last}`
+      : c.last;
+    
+    return `
+      <div class="item" onclick="openChat('${escapeQuotes(c.name)}')">
+        <div class="avatar">
+          <img src="${c.avatar}" alt="${c.name}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+          ${c.online ? '<div class="online-dot"></div>' : ''}
         </div>
-        <div class="row">
-          <div class="preview">
-            ${c.status === 'read' ? '<span class="tick read">✓✓</span>' : ''}
-            ${c.status === 'delivered' ? '<span class="tick delivered">✓✓</span>' : ''}
-            ${c.last}
+        <div class="info">
+          <div class="row">
+            <div class="name">${c.name}</div>
+            <div class="time">${c.time}</div>
+            ${c.pinned ? '<div class="pin">📌</div>' : ''}
           </div>
-          ${c.unread > 0 ? `<div class="badge">${c.unread}</div>` : ''}
+          <div class="row">
+            <div class="preview">${preview}</div>
+            ${c.unread > 0 ? `<div class="badge">${c.unread}</div>` : ''}
+          </div>
         </div>
       </div>
-    </div>
-  `).join("") || '<div style="text-align:center;padding:60px 20px;color:#94A3B8">No chats found</div>';
+    `;
+  }).join("");
+
+  updateTotalBadge();
 }
 
+function setChatFilter(f, el) {
+  currentChatFilter = f;
+  document.querySelectorAll("#tab-chats .chip").forEach(x => x.classList.remove("active"));
+  el.classList.add("active");
+  renderChats();
+}
+
+function updateTotalBadge() {
+  const total = chats.reduce((a, c) => a + c.unread, 0);
+  const badge = document.getElementById("total-badge");
+  if (total > 0) {
+    badge.textContent = total;
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+/* ==================== RENDER: CONTACTS ==================== */
 function renderContacts() {
   const list = document.getElementById("contacts-list");
-  list.innerHTML = contacts.map(c => `
-    <div class="item" onclick="openChat('${c.name}')">
-      <div class="avatar"><img src="${c.avatar}" alt="${c.name}"></div>
+  const q = (document.getElementById("contact-search").value || "").toLowerCase();
+  const filtered = contacts.filter(c => c.name.toLowerCase().includes(q));
+  
+  const registered = filtered.filter(c => c.reg);
+  const unregistered = filtered.filter(c => !c.reg);
+
+  let html = "";
+  if (registered.length) {
+    html += `<div class="section-title" style="padding-left:16px;padding-right:16px">On Kabootar</div>`;
+    html += registered.map(c => contactItem(c)).join("");
+  }
+  if (unregistered.length) {
+    html += `<div class="section-title" style="padding-left:16px;padding-right:16px">Invite to Kabootar</div>`;
+    html += unregistered.map(c => contactItem(c)).join("");
+  }
+  if (!html) {
+    html = `<div class="empty"><div class="icon">👥</div><p>No contacts found</p></div>`;
+  }
+  list.innerHTML = html;
+}
+
+function contactItem(c) {
+  const initials = c.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  return `
+    <div class="item" onclick="contactTap('${escapeQuotes(c.name)}', ${c.reg})">
+      <div class="avatar">
+        <img src="${c.avatar}" alt="${c.name}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+      </div>
       <div class="info">
         <div class="row">
           <div class="name">${c.name}</div>
-          ${c.reg ? '' : '<div style="background:#C85A32;color:#FFF;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px">Invite</div>'}
+          ${c.reg 
+            ? '<span style="font-size:18px">💬</span>' 
+            : '<div style="background:#C85A32;color:#FFF;font-size:11px;font-weight:700;padding:4px 12px;border-radius:100px">Invite</div>'}
         </div>
         <div class="preview">${c.sub}</div>
       </div>
     </div>
-  `).join("");
+  `;
 }
 
+function contactTap(name, isReg) {
+  if (isReg) openChat(name);
+  else showToast(`Invite sent to ${name}`);
+}
+
+/* ==================== RENDER: CALLS ==================== */
 function renderCalls() {
   const list = document.getElementById("calls-list");
-  const filtered = currentCallFilter === "all" ? calls : calls.filter(c => c.status === "missed");
+  const filtered = currentCallFilter === "all" 
+    ? calls 
+    : calls.filter(c => c.status === "missed");
+  
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="icon">📞</div><p>No calls</p></div>`;
+    return;
+  }
+
   list.innerHTML = filtered.map(c => {
     const missed = c.status === "missed";
+    const initials = c.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+    const statusIcon = c.status === "incoming" ? "↙" : c.status === "outgoing" ? "↗" : "✕";
+    const statusColor = missed ? "#EF4444" : c.status === "incoming" ? "#10B981" : "#3B82F6";
+    
     return `
-      <div class="item">
-        <div class="avatar"><img src="${c.avatar}" alt="${c.name}"></div>
+      <div class="item" onclick="showToast('Calling ${c.name}...')">
+        <div class="avatar">
+          <img src="${c.avatar}" alt="${c.name}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+        </div>
         <div class="info">
           <div class="name" style="color:${missed ? '#EF4444' : '#0F172A'}">${c.name}</div>
-          <div class="preview">${c.status} · ${c.time}${c.duration ? ' · ' + c.duration : ''}</div>
+          <div class="preview">
+            <span style="color:${statusColor};font-weight:700">${statusIcon}</span>
+            ${c.status} · ${c.time}${c.duration ? ' · ' + c.duration : ''}
+          </div>
         </div>
         <div style="font-size:20px">${c.type === 'video' ? '📹' : '📞'}</div>
       </div>
     `;
-  }).join("") || '<div style="text-align:center;padding:60px 20px;color:#94A3B8">No calls</div>';
-}
-
-function switchTab(name, el) {
-  document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
-  document.getElementById("tab-" + name).style.display = "block";
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  el.classList.add("active");
-}
-
-function setFilter(f, el) {
-  currentFilter = f;
-  document.querySelectorAll("#tab-chats .filter").forEach(x => x.classList.remove("active"));
-  el.classList.add("active");
-  renderChats();
+  }).join("");
 }
 
 function setCallFilter(f, el) {
   currentCallFilter = f;
-  document.querySelectorAll("#tab-calls .filter").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll("#tab-calls .chip").forEach(x => x.classList.remove("active"));
   el.classList.add("active");
   renderCalls();
 }
 
-function filterList(val) {
-  currentSearch = val;
-  renderChats();
+/* ==================== RENDER: STORIES ==================== */
+function renderStories() {
+  const tray = document.getElementById("story-tray");
+  let html = `
+    <div class="story-ring add" onclick="showToast('Add new story')">
+      <div class="circle">
+        <div class="inner" style="color:#C85A32;font-weight:700;font-size:26px">+</div>
+      </div>
+      <div class="label">My Story</div>
+    </div>
+  `;
+  
+  html += stories.map(s => {
+    const initials = s.name[0].toUpperCase();
+    return `
+      <div class="story-ring ${s.viewed ? 'viewed' : ''}" onclick="openStory(${s.id})">
+        <div class="circle">
+          <div class="inner">
+            <div class="avatar" style="width:100%;height:100%;font-size:22px">
+              <img src="${s.avatar}" alt="${s.name}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+            </div>
+          </div>
+        </div>
+        <div class="label">${s.name}</div>
+      </div>
+    `;
+  }).join("");
+  
+  tray.innerHTML = html;
+
+  // Viewed list
+  const viewedList = document.getElementById("stories-viewed-list");
+  const viewed = stories.filter(s => s.viewed);
+  if (viewed.length) {
+    viewedList.innerHTML = 
+      `<div class="section-title">Recently Viewed</div>` + 
+      viewed.map(s => {
+        const initials = s.name[0].toUpperCase();
+        return `
+          <div class="item" onclick="openStory(${s.id})">
+            <div class="avatar" style="width:44px;height:44px">
+              <img src="${s.avatar}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+            </div>
+            <div class="info">
+              <div class="name">${s.name}</div>
+              <div class="preview">${s.caption || 'Photo · 24h left'}</div>
+            </div>
+            <span class="tick read" style="font-size:16px">✓✓</span>
+          </div>
+        `;
+      }).join("");
+  }
 }
 
+function openStory(id) {
+  const s = stories.find(x => x.id === id);
+  if (!s) return;
+  s.viewed = true;
+  
+  document.getElementById("story-name").textContent = s.name;
+  document.getElementById("story-image").src = s.image;
+  document.getElementById("story-caption").textContent = s.caption || "";
+  
+  const av = document.getElementById("story-avatar");
+  av.textContent = s.name[0].toUpperCase();
+  
+  const viewer = document.getElementById("story-viewer");
+  viewer.classList.add("open");
+  
+  // Reset and restart progress animation
+  const bar = document.getElementById("story-bar");
+  bar.style.animation = "none";
+  void bar.offsetWidth;
+  bar.style.animation = "progressBar 5s linear forwards";
+  
+  clearTimeout(window.storyTimer);
+  window.storyTimer = setTimeout(closeStory, 5000);
+  
+  renderStories();
+}
+
+function closeStory() {
+  document.getElementById("story-viewer").classList.remove("open");
+  clearTimeout(window.storyTimer);
+}
+
+/* ==================== CHAT ROOM ==================== */
 function openChat(name) {
   currentChatName = name;
   document.getElementById("chat-name").textContent = name;
+  
   const av = document.getElementById("chat-avatar");
-  av.textContent = name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
-  const msgs = messagesDB[name] || [{ text: "Hey! 👋", own: false, time: "now", status: "read" }];
-  const container = document.getElementById("messages");
-  container.innerHTML = msgs.map(m => `
-    <div class="bubble ${m.own ? 'out' : 'in'}">
-      ${m.text}
-      <div class="bubble-meta">
-        <span>${m.time}</span>
-        ${m.own ? `<span class="tick ${m.status}">${m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : '✓'}</span>` : ''}
-      </div>
-    </div>
-  `).join("");
+  const initials = name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  const contact = contacts.find(c => c.name === name) || chats.find(c => c.name === name);
+  if (contact && contact.avatar) {
+    av.innerHTML = `<img src="${contact.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    av.textContent = initials;
+  }
+  
+  renderMessages();
   document.getElementById("chat-room").classList.add("open");
-  container.scrollTop = container.scrollHeight;
+  setTimeout(() => {
+    const msgs = document.getElementById("messages");
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 50);
+
+  // Mark as read
+  const chat = chats.find(c => c.name === name);
+  if (chat) {
+    chat.unread = 0;
+    renderChats();
+  }
 }
 
 function closeChat() {
   document.getElementById("chat-room").classList.remove("open");
+  hideReactions();
+}
+
+function renderMessages() {
+  const container = document.getElementById("messages");
+  const msgs = messagesDB[currentChatName] || [
+    { text: "Hey! 👋", own: false, time: "now", status: "read" }
+  ];
+  
+  container.innerHTML = msgs.map((m, i) => {
+    let content = m.text;
+    
+    if (m.voice) {
+      content = `
+        <div class="voice-bar">
+          <span style="font-size:16px">▶</span>
+          <div class="voice-bars">
+            ${Array.from({length: 18}).map((_, j) => 
+              `<span style="height:${6 + (j * 3) % 18}px"></span>`
+            ).join("")}
+          </div>
+          <span style="font-size:11px;opacity:0.8">${m.voiceDuration}s</span>
+        </div>
+      `;
+    }
+    
+    const ticks = m.own 
+      ? `<span class="tick ${m.status}">${m.status === 'read' || m.status === 'delivered' ? '✓✓' : '✓'}</span>` 
+      : '';
+    
+    return `
+      <div class="bubble ${m.own ? 'out' : 'in'}" 
+           data-index="${i}"
+           ontouchstart="startLongPress(${i}, event)" 
+           ontouchend="cancelLongPress()"
+           onmousedown="startLongPress(${i}, event)"
+           onmouseup="cancelLongPress()">
+        ${content}
+        <div class="bubble-meta">
+          <span>${m.time}</span>
+          ${ticks}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+let longPressTimer = null;
+function startLongPress(index, event) {
+  longPressTimer = setTimeout(() => {
+    currentMsgReactionTarget = index;
+    document.getElementById("reactions-bar").classList.add("open");
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 500);
+}
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+function hideReactions() {
+  document.getElementById("reactions-bar").classList.remove("open");
+}
+
+function react(emoji) {
+  if (currentMsgReactionTarget === null) return;
+  const msgs = messagesDB[currentChatName];
+  if (!msgs) return;
+  const msg = msgs[currentMsgReactionTarget];
+  if (!msg) return;
+  
+  if (!msg.reactions) msg.reactions = [];
+  msg.reactions.push(emoji);
+  
+  showToast(`Reacted ${emoji}`);
+  hideReactions();
+  renderMessages();
 }
 
 function sendMsg() {
   const input = document.getElementById("msg-input");
   const text = input.value.trim();
   if (!text) return;
-  const container = document.getElementById("messages");
+  
+  if (!messagesDB[currentChatName]) {
+    messagesDB[currentChatName] = [];
+  }
+  
   const now = new Date();
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const div = document.createElement("div");
-  div.className = "bubble out";
-  div.innerHTML = `${text}<div class="bubble-meta"><span>${time}</span><span class="tick" id="tick-${Date.now()}">✓</span></div>`;
-  container.appendChild(div);
-  input.value = "";
-  container.scrollTop = container.scrollHeight;
   
-  const tickId = "tick-" + Date.now();
+  const newMsg = { 
+    text, 
+    own: true, 
+    time, 
+    status: "sending",
+    id: Date.now()
+  };
+  
+  messagesDB[currentChatName].push(newMsg);
+  input.value = "";
+  renderMessages();
+  
+  const msgs = document.getElementById("messages");
+  msgs.scrollTop = msgs.scrollHeight;
+  
+  // Update chat list preview
+  const chat = chats.find(c => c.name === currentChatName);
+  if (chat) {
+    chat.last = text;
+    chat.time = "now";
+    chat.status = "sent";
+    renderChats();
+  }
+  
+  // Simulate delivery
   setTimeout(() => {
-    const tick = document.getElementById(tickId);
-    if (tick) { tick.textContent = "✓✓"; tick.classList.add("delivered"); }
+    newMsg.status = "delivered";
+    if (chat) chat.status = "delivered";
+    renderMessages();
   }, 800);
+  
+  // Simulate read
   setTimeout(() => {
-    const tick = document.getElementById(tickId);
-    if (tick) { tick.textContent = "✓✓"; tick.classList.remove("delivered"); tick.classList.add("read"); }
+    newMsg.status = "read";
+    if (chat) chat.status = "read";
+    renderMessages();
+    renderChats();
   }, 2200);
 }
 
+/* ==================== TABS ==================== */
+function switchTab(name, el) {
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  document.getElementById("tab-" + name).classList.add("active");
+  document.querySelectorAll(".tabs .tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+}
+
+/* ==================== UTILS ==================== */
+function escapeQuotes(str) {
+  return str.replace(/'/g, "\\'");
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function showQRModal() {
+  showToast("QR: kabootar://u/kb_aarav_01");
+}
+
+/* ==================== INIT ==================== */
 renderChats();
 renderContacts();
 renderCalls();
+renderStories();
+
+// Prevent zoom on double-tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
 </script>
+
 </body>
-</html>
+ </html>
