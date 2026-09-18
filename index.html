@@ -4,12 +4,997 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#C85A32">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kabootar">
 <title>🕊️ Kabootar Messenger</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
-<link rel="stylesheet" href="styles.css">
+<style>
+/* ============================================
+   FORCE LIGHT MODE (prevents Chrome Auto Dark)
+   ============================================ */
+html {
+  color-scheme: light !important;
+  background: #F8FAFC !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  forced-color-adjust: none;
+}
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: #F8FAFC !important;
+  color: #0F172A !important;
+  line-height: 1.4;
+  font-size: 15px;
+}
+@media (prefers-color-scheme: dark) {
+  html, body { background: #F8FAFC !important; color: #0F172A !important; }
+}
+input, button, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color-scheme: light !important;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+.app {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100vh;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+.top-bar {
+  background: #C85A32;
+  color: #FFFFFF;
+  padding: 14px 16px 12px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.top-bar .logo { font-size: 22px; line-height: 1; }
+.top-bar .title {
+  font-size: 17px;
+  font-weight: 700;
+  flex: 1;
+  letter-spacing: -0.3px;
+}
+.top-bar .back {
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 10px 4px 0;
+  line-height: 1;
+  font-weight: 300;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+}
+
+/* ============================================
+   TAB CONTENT
+   ============================================ */
+.tab-content {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+.tab-content.active { display: flex; }
+
+/* ============================================
+   SCREEN HEADER
+   ============================================ */
+.screen-header {
+  padding: 20px 16px 12px;
+  background: #F8FAFC;
+  flex-shrink: 0;
+}
+.screen-header h1 {
+  font-size: 30px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.8px;
+  line-height: 1;
+}
+.screen-header .sub {
+  font-size: 13px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+/* ============================================
+   SEARCH
+   ============================================ */
+.search {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin-top: 12px;
+  gap: 8px;
+}
+.search .icon { font-size: 15px; color: #94A3B8; }
+.search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #0F172A;
+  background: transparent;
+  min-width: 0;
+}
+.search input::placeholder { color: #94A3B8; }
+
+/* ============================================
+   FILTER CHIPS
+   ============================================ */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.filters::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.chip.active {
+  background: #0F172A;
+  color: #FFFFFF;
+  border-color: #0F172A;
+}
+
+/* ============================================
+   LIST
+   ============================================ */
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 90px;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+.list::-webkit-scrollbar { width: 0; }
+
+.item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin: 0 12px 4px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+}
+.item:active { transform: scale(0.98); background: #F1F5F9; }
+
+/* ============================================
+   AVATAR
+   ============================================ */
+.avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #C85A32;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.sm { width: 40px; height: 40px; font-size: 14px; }
+.avatar.lg { width: 88px; height: 88px; font-size: 32px; }
+.avatar .online-dot {
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 14px; height: 14px;
+  background: #10B981;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+}
+
+/* ============================================
+   ITEM INFO
+   ============================================ */
+.info { flex: 1; margin-left: 12px; min-width: 0; }
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.name {
+  font-weight: 600;
+  color: #0F172A;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.time { font-size: 11px; color: #94A3B8; flex-shrink: 0; }
+.preview {
+  color: #64748B;
+  font-size: 13px;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.badge {
+  background: #C85A32;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+.tick { font-size: 13px; flex-shrink: 0; }
+.tick.read { color: #10B981; }
+.tick.delivered { color: #94A3B8; }
+.pin { font-size: 12px; color: #94A3B8; }
+
+/* ============================================
+   BOTTOM TABS
+   ============================================ */
+.tabs {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 66px;
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  z-index: 50;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  color: #94A3B8;
+  position: relative;
+  transition: color 0.15s;
+  padding-top: 4px;
+  user-select: none;
+}
+.tab.active { color: #C85A32; }
+.tab-icon { font-size: 20px; line-height: 1; }
+.tab-label { font-size: 10px; font-weight: 600; }
+.tab-badge {
+  position: absolute;
+  top: 0;
+  right: 50%;
+  transform: translateX(14px);
+  background: #C85A32;
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ============================================
+   FAB
+   ============================================ */
+.fab {
+  position: absolute;
+  bottom: 82px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #C85A32;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 8px 20px rgba(200, 90, 50, 0.4);
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.15s;
+  border: none;
+}
+.fab:active { transform: scale(0.9); }
+
+/* ============================================
+   PROFILE
+   ============================================ */
+.profile-card {
+  margin: 8px 16px 16px;
+  padding: 24px 20px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  text-align: center;
+}
+.profile-card .avatar { margin: 0 auto 12px; }
+.profile-card h2 {
+  font-size: 22px;
+  color: #0F172A;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+.profile-card p { font-size: 14px; color: #64748B; margin-bottom: 4px; }
+.profile-card .handle { font-size: 13px; color: #C85A32; font-weight: 600; }
+.profile-card .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.profile-card .actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 14px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.profile-card .actions .primary {
+  background: rgba(200, 90, 50, 0.1);
+  color: #C85A32;
+}
+.profile-card .actions .secondary {
+  background: #F1F5F9;
+  color: #1E293B;
+}
+
+.section-title {
+  padding: 16px 16px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.settings-group {
+  margin: 0 16px 8px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  cursor: pointer;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row:active { background: #F8FAFC; }
+.settings-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.settings-label { flex: 1; font-size: 15px; color: #0F172A; }
+.settings-value { font-size: 13px; color: #94A3B8; margin-right: 6px; }
+.chev { color: #CBD5E1; font-size: 20px; line-height: 1; }
+
+.logout {
+  margin: 16px;
+  padding: 16px;
+  background: #FEF2F2;
+  border-radius: 16px;
+  text-align: center;
+  color: #EF4444;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+}
+.logout:active { background: #FEE2E2; }
+
+/* ============================================
+   CHAT ROOM
+   ============================================ */
+.chat-room {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #F8FAFC;
+  display: none;
+  flex-direction: column;
+  z-index: 100;
+}
+.chat-room.open { display: flex; }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.back-btn {
+  font-size: 24px;
+  color: #0F172A;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-weight: 300;
+  line-height: 1;
+  background: none;
+  border: none;
+}
+.chat-title { flex: 1; min-width: 0; }
+.chat-title .name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-title .status { font-size: 11px; color: #64748B; margin-top: 2px; }
+.chat-icon {
+  font-size: 20px;
+  color: #C85A32;
+  padding: 6px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.e2ee-banner {
+  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 16px;
+  text-align: center;
+  font-size: 11px;
+  color: #10B981;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+.messages::-webkit-scrollbar { width: 0; }
+
+.bubble {
+  max-width: 78%;
+  padding: 8px 12px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.35;
+  word-wrap: break-word;
+  animation: bubbleIn 0.2s ease-out;
+}
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bubble.in {
+  background: #FFFFFF;
+  color: #0F172A;
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+}
+.bubble.out {
+  background: #C85A32;
+  color: #FFFFFF;
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+}
+.bubble-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.bubble.out .bubble-meta { color: rgba(255,255,255,0.75); }
+.bubble.in .bubble-meta { color: #94A3B8; }
+
+.voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+.voice-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  flex: 1;
+}
+.voice-bars span {
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.reactions-bar {
+  display: none;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+.reactions-bar.open { display: flex; }
+.reaction-btn {
+  background: transparent;
+  border: none;
+  font-size: 26px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.15s;
+}
+.reaction-btn:active { transform: scale(1.2); }
+
+.input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+.add-btn {
+  font-size: 24px;
+  color: #64748B;
+  padding: 6px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.input-wrap {
+  flex: 1;
+  background: #F1F5F9;
+  border-radius: 24px;
+  padding: 10px 16px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+}
+.input-bar input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #0F172A;
+}
+.send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #C85A32;
+  color: #FFFFFF;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   STORIES
+   ============================================ */
+.story-tray {
+  display: flex;
+  gap: 14px;
+  padding: 8px 16px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.story-tray::-webkit-scrollbar { display: none; }
+.story-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 76px;
+}
+.story-ring .circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  padding: 3px;
+  background: #C85A32;
+  transition: transform 0.15s;
+}
+.story-ring:active .circle { transform: scale(0.94); }
+.story-ring.viewed .circle { background: #CBD5E1; }
+.story-ring .inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  padding: 2px;
+  background: #FFFFFF;
+  position: relative;
+}
+.story-ring .inner .avatar {
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 22px;
+}
+.story-ring .label {
+  font-size: 12px;
+  color: #334155;
+  margin-top: 8px;
+  font-weight: 500;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+.story-ring.add .circle { background: #CBD5E1; }
+.story-ring.add .inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #C85A32;
+  font-weight: 700;
+}
+
+.my-story-card {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin: 8px 16px 4px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  cursor: pointer;
+}
+.my-story-avatar {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.my-story-avatar .plus {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #C85A32;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  border: 2px solid #FFFFFF;
+}
+
+/* ============================================
+   STORY VIEWER
+   ============================================ */
+.story-viewer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #000000;
+  display: none;
+  z-index: 200;
+  flex-direction: column;
+}
+.story-viewer.open { display: flex; }
+
+.story-progress-container {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: 8px;
+  right: 8px;
+  display: flex;
+  gap: 3px;
+  z-index: 5;
+}
+.progress-segment {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.progress-segment .fill {
+  height: 100%;
+  width: 0%;
+  background: #FFFFFF;
+  border-radius: 100px;
+}
+.progress-segment.done .fill { width: 100%; }
+.progress-segment.active .fill {
+  animation: fillBar 5s linear forwards;
+}
+@keyframes fillBar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.story-header {
+  position: absolute;
+  top: max(26px, calc(env(safe-area-inset-top) + 12px));
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 5;
+}
+.story-header .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+.story-header .info { flex: 1; min-width: 0; margin: 0; }
+.story-header .name {
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.story-header .time {
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.story-header .close-btn {
+  color: #FFFFFF;
+  font-size: 26px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  background: none;
+  border: none;
+}
+
+.story-image {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-caption {
+  position: absolute;
+  top: 50%;
+  left: 0; right: 0;
+  transform: translateY(-50%);
+  color: #FFFFFF;
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 32px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+  z-index: 4;
+}
+
+.nav-zone {
+  position: absolute;
+  top: 80px;
+  bottom: 100px;
+  width: 35%;
+  z-index: 3;
+  cursor: pointer;
+}
+.nav-zone.left { left: 0; }
+.nav-zone.right { right: 0; }
+
+.story-reply {
+  position: absolute;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 5;
+}
+.story-reply .input {
+  flex: 1;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 100px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.story-reply input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #FFFFFF;
+  font-size: 15px;
+  min-width: 0;
+}
+.story-reply input::placeholder { color: rgba(255,255,255,0.7); }
+.story-reply .emoji-btn {
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+}
+.story-reply .send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #C85A32;
+  color: #FFFFFF;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.reactions-drawer {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  background: rgba(15,23,42,0.9);
+  border-radius: 100px;
+  backdrop-filter: blur(12px);
+  z-index: 6;
+  opacity: 0;
+  transition: all 0.2s;
+  pointer-events: none;
+}
+.reactions-drawer.open {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.reaction-emoji {
+  font-size: 26px;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.15s;
+}
+.reaction-emoji:active { transform: scale(1.3); }
+
+/* ============================================
+   TOAST
+   ============================================ */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.95);
+  color: #FFFFFF;
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.25s;
+  pointer-events: none;
+  z-index: 999;
+  max-width: 90%;
+  text-align: center;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================
+   EMPTY
+   ============================================ */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94A3B8;
+}
+.empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty p { font-size: 14px; }
+</style>
 </head>
 <body>
 
@@ -17,11 +1002,11 @@
 
   <!-- Top Bar -->
   <div class="top-bar">
-    <span class="logo">🕊️</span>
-    <span class="title">Kabootar</span>
+    <span class="logo" id="top-logo">🕊️</span>
+    <span class="title" id="top-title">Kabootar</span>
   </div>
 
-  <!-- CHATS TAB -->
+  <!-- ==================== CHATS ==================== -->
   <div id="tab-chats" class="tab-content active">
     <div class="screen-header">
       <h1>Chats</h1>
@@ -37,10 +1022,32 @@
       </div>
     </div>
     <div class="list" id="chats-list"></div>
-    <div class="fab" onclick="showToast('Start new chat')">✏️</div>
+    <button class="fab" onclick="showToast('Start new chat')">✏️</button>
   </div>
 
-  <!-- CONTACTS TAB -->
+  <!-- ==================== STORIES ==================== -->
+  <div id="tab-stories" class="tab-content">
+    <div class="screen-header">
+      <h1>Stories</h1>
+      <div class="sub">Status that fades in 24 hours</div>
+    </div>
+    <div class="my-story-card" onclick="showToast('Add to my story')">
+      <div class="my-story-avatar">
+        <div class="avatar" style="width:52px;height:52px;font-size:20px">AS</div>
+        <div class="plus">+</div>
+      </div>
+      <div class="info">
+        <div class="name">My Story</div>
+        <div class="preview">Tap to add to your story</div>
+      </div>
+    </div>
+    <div class="section-title">Recent Updates</div>
+    <div class="story-tray" id="story-tray"></div>
+    <div class="section-title">Recently Viewed</div>
+    <div class="list" style="padding-top:0" id="viewed-list"></div>
+  </div>
+
+  <!-- ==================== CONTACTS ==================== -->
   <div id="tab-contacts" class="tab-content">
     <div class="screen-header">
       <h1>Contacts</h1>
@@ -52,7 +1059,7 @@
     <div class="list" id="contacts-list"></div>
   </div>
 
-  <!-- CALLS TAB -->
+  <!-- ==================== CALLS ==================== -->
   <div id="tab-calls" class="tab-content">
     <div class="screen-header">
       <h1>Calls</h1>
@@ -64,7 +1071,7 @@
     <div class="list" id="calls-list"></div>
   </div>
 
-  <!-- PROFILE TAB -->
+  <!-- ==================== PROFILE ==================== -->
   <div id="tab-profile" class="tab-content">
     <div class="list" style="padding-top:0">
       <div class="screen-header" style="padding-bottom:8px"><h1>Profile</h1></div>
@@ -142,30 +1149,30 @@
     </div>
   </div>
 
-  <!-- Bottom Tabs -->
+  <!-- ==================== BOTTOM TABS (6) ==================== -->
   <div class="tabs">
-    <div class="tab" onclick="switchTab('contacts', this)">
+    <div class="tab" data-tab="contacts" onclick="switchTab('contacts', this)">
       <div class="tab-icon">👥</div><div class="tab-label">Contacts</div>
     </div>
-    <div class="tab" onclick="window.location.href='stories.html'">
+    <div class="tab" data-tab="stories" onclick="switchTab('stories', this)">
       <div class="tab-icon">📖</div><div class="tab-label">Stories</div>
     </div>
-    <div class="tab active" onclick="switchTab('chats', this)">
+    <div class="tab active" data-tab="chats" onclick="switchTab('chats', this)">
       <div class="tab-icon">💬</div><div class="tab-label">Chats</div>
       <div class="tab-badge" id="total-badge">7</div>
     </div>
-    <div class="tab" onclick="switchTab('calls', this)">
+    <div class="tab" data-tab="calls" onclick="switchTab('calls', this)">
       <div class="tab-icon">📞</div><div class="tab-label">Calls</div>
     </div>
-    <div class="tab" onclick="switchTab('profile', this)">
+    <div class="tab" data-tab="profile" onclick="switchTab('profile', this)">
       <div class="tab-icon">👤</div><div class="tab-label">Profile</div>
     </div>
-    <div class="tab" onclick="showToast('🕊️ Kabootar AI coming soon')">
+    <div class="tab" data-tab="kabootar" onclick="switchTab('kabootar', this)">
       <div class="tab-icon">🕊️</div><div class="tab-label">Kabootar</div>
     </div>
   </div>
 
-  <!-- Chat Room -->
+  <!-- ==================== CHAT ROOM ==================== -->
   <div class="chat-room" id="chat-room">
     <div class="chat-header">
       <button class="back-btn" onclick="closeChat()">←</button>
@@ -198,13 +1205,49 @@
     </div>
   </div>
 
-  <!-- Toast -->
+  <!-- ==================== STORY VIEWER ==================== -->
+  <div class="story-viewer" id="story-viewer">
+    <div class="story-progress-container" id="progress-container"></div>
+    <div class="story-header">
+      <div class="avatar" id="story-avatar">?</div>
+      <div class="info">
+        <div class="name" id="story-name">User</div>
+        <div class="time" id="story-time">just now</div>
+      </div>
+      <button class="close-btn" onclick="closeStory(event)">✕</button>
+    </div>
+    <img class="story-image" id="story-image" src="" alt="">
+    <div class="story-caption" id="story-caption"></div>
+    <div class="nav-zone left" onclick="prevStory(event)"></div>
+    <div class="nav-zone right" onclick="nextStory(event)"></div>
+    <div class="reactions-drawer" id="reactions-drawer">
+      <button class="reaction-emoji" onclick="sendReaction('❤️')">❤️</button>
+      <button class="reaction-emoji" onclick="sendReaction('😂')">😂</button>
+      <button class="reaction-emoji" onclick="sendReaction('😮')">😮</button>
+      <button class="reaction-emoji" onclick="sendReaction('😢')">😢</button>
+      <button class="reaction-emoji" onclick="sendReaction('🔥')">🔥</button>
+      <button class="reaction-emoji" onclick="sendReaction('👏')">👏</button>
+    </div>
+    <div class="story-reply">
+      <div class="input">
+        <input type="text" placeholder="Reply to story..." id="story-reply-input"
+               onfocus="hideReactions()"
+               onkeypress="if(event.key==='Enter') sendReply()">
+        <button class="emoji-btn" onclick="toggleReactions()">😊</button>
+      </div>
+      <button class="send-btn" onclick="sendReply()">➤</button>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST ==================== -->
   <div class="toast" id="toast"></div>
 
 </div>
 
 <script>
-/* ==================== DATA ==================== */
+/* ============================================
+   DATA
+   ============================================ */
 const chats = [
   { id: 1, name: "Priya Patel", avatar: "https://i.pravatar.cc/150?u=priya",
     last: "Sent the deck, check when free 🙌", time: "5m", unread: 2, pinned: true,
@@ -242,6 +1285,29 @@ const calls = [
   { name: "Aarav Sharma", avatar: "https://i.pravatar.cc/150?u=aarav", type: "video", status: "incoming", time: "yesterday", duration: "12:40" },
 ];
 
+const stories = [
+  { id: 1, name: "Priya Patel", avatar: "https://i.pravatar.cc/150?u=priya", time: "2 hours ago", viewed: false,
+    items: [
+      { image: "https://picsum.photos/seed/story1a/600/1000", caption: "Mumbai mornings 🌤️" },
+      { image: "https://picsum.photos/seed/story1b/600/1000", caption: "Coffee time ☕" },
+    ]},
+  { id: 2, name: "Rohan Gupta", avatar: "https://i.pravatar.cc/150?u=rohan", time: "4 hours ago", viewed: false,
+    items: [{ image: "https://picsum.photos/seed/story2a/600/1000", caption: "Shipping day 🚀" }]},
+  { id: 3, name: "Aarav Sharma", avatar: "https://i.pravatar.cc/150?u=aarav", time: "6 hours ago", viewed: false,
+    items: [
+      { image: "https://picsum.photos/seed/story3a/600/1000", caption: "Weekend vibes ✨" },
+      { image: "https://picsum.photos/seed/story3b/600/1000", caption: "Sunset 🌅" },
+      { image: "https://picsum.photos/seed/story3c/600/1000" },
+    ]},
+  { id: 4, name: "Neha Verma", avatar: "https://i.pravatar.cc/150?u=neha", time: "10 hours ago", viewed: true,
+    items: [{ image: "https://picsum.photos/seed/story4a/600/1000", caption: "Design inspo 🎨" }]},
+  { id: 5, name: "Kabir Singh", avatar: "https://i.pravatar.cc/150?u=kabir", time: "12 hours ago", viewed: true,
+    items: [
+      { image: "https://picsum.photos/seed/story5a/600/1000", caption: "New palette study" },
+      { image: "https://picsum.photos/seed/story5b/600/1000" },
+    ]},
+];
+
 const messagesDB = {
   "Priya Patel": [
     { text: "Hey! How's the project going?", own: false, time: "2:30", status: "read" },
@@ -270,14 +1336,21 @@ const messagesDB = {
   ],
 };
 
-/* ==================== STATE ==================== */
+/* ============================================
+   STATE
+   ============================================ */
 let currentChatFilter = "all";
 let currentCallFilter = "all";
 let currentChatName = "";
 let currentMsgReactionTarget = null;
 let longPressTimer = null;
+let currentStoryIdx = 0;
+let currentItemIdx = 0;
+let storyTimer = null;
 
-/* ==================== RENDER: CHATS ==================== */
+/* ============================================
+   RENDER: CHATS
+   ============================================ */
 function renderChats() {
   const list = document.getElementById("chats-list");
   const q = (document.getElementById("chat-search").value || "").toLowerCase();
@@ -345,7 +1418,9 @@ function updateTotalBadge() {
   }
 }
 
-/* ==================== RENDER: CONTACTS ==================== */
+/* ============================================
+   RENDER: CONTACTS
+   ============================================ */
 function renderContacts() {
   const list = document.getElementById("contacts-list");
   const q = (document.getElementById("contact-search").value || "").toLowerCase();
@@ -394,7 +1469,9 @@ function contactTap(name, isReg) {
   else showToast(`Invite sent to ${name}`);
 }
 
-/* ==================== RENDER: CALLS ==================== */
+/* ============================================
+   RENDER: CALLS
+   ============================================ */
 function renderCalls() {
   const list = document.getElementById("calls-list");
   const filtered = currentCallFilter === "all"
@@ -437,7 +1514,169 @@ function setCallFilter(f, el) {
   renderCalls();
 }
 
-/* ==================== CHAT ROOM ==================== */
+/* ============================================
+   RENDER: STORIES
+   ============================================ */
+function renderStories() {
+  const tray = document.getElementById("story-tray");
+  const viewed = document.getElementById("viewed-list");
+
+  const unviewed = stories.filter(s => !s.viewed);
+  tray.innerHTML = unviewed.length
+    ? unviewed.map(s => storyRingHTML(s)).join("")
+    : `<div style="padding:20px;color:#94A3B8;font-size:13px">All caught up ✨</div>`;
+
+  const viewedList = stories.filter(s => s.viewed);
+  viewed.innerHTML = viewedList.length
+    ? viewedList.map(s => viewedItemHTML(s)).join("")
+    : `<div class="empty"><div class="icon">👀</div><p>No viewed stories yet</p></div>`;
+}
+
+function storyRingHTML(s) {
+  const initials = s.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  return `
+    <div class="story-ring ${s.viewed ? 'viewed' : ''}" onclick="openStory(${s.id})">
+      <div class="circle">
+        <div class="inner">
+          <div class="avatar">
+            <img src="${s.avatar}" alt="${s.name}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+          </div>
+        </div>
+      </div>
+      <div class="label">${s.name.split(' ')[0]}</div>
+    </div>
+  `;
+}
+
+function viewedItemHTML(s) {
+  const initials = s.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  const itemCount = s.items.length;
+  return `
+    <div class="item" onclick="openStory(${s.id})">
+      <div class="avatar sm">
+        <img src="${s.avatar}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
+      </div>
+      <div class="info">
+        <div class="name">${s.name}</div>
+        <div class="preview">
+          <span style="color:#10B981;font-size:14px">👁</span>
+          ${itemCount} ${itemCount === 1 ? 'photo' : 'photos'} · ${s.time}
+        </div>
+      </div>
+      <span style="color:#94A3B8;font-size:20px">›</span>
+    </div>
+  `;
+}
+
+function openStory(id) {
+  const idx = stories.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  currentStoryIdx = idx;
+  currentItemIdx = 0;
+  startStory();
+}
+
+function startStory() {
+  const story = stories[currentStoryIdx];
+  if (!story) return;
+  story.viewed = true;
+
+  const initials = story.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  document.getElementById("story-name").textContent = story.name;
+  document.getElementById("story-time").textContent = story.time;
+  const avatarEl = document.getElementById("story-avatar");
+  avatarEl.innerHTML = `<img src="${story.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentNode.textContent='${initials}'">`;
+
+  const progressContainer = document.getElementById("progress-container");
+  progressContainer.innerHTML = story.items.map((_, i) => {
+    let cls = "";
+    if (i < currentItemIdx) cls = "done";
+    else if (i === currentItemIdx) cls = "active";
+    return `<div class="progress-segment ${cls}"><div class="fill"></div></div>`;
+  }).join("");
+
+  const item = story.items[currentItemIdx];
+  document.getElementById("story-image").src = item.image;
+  document.getElementById("story-caption").textContent = item.caption || "";
+
+  document.getElementById("story-viewer").classList.add("open");
+
+  clearTimeout(storyTimer);
+  storyTimer = setTimeout(() => nextStory(), 5000);
+
+  renderStories();
+}
+
+function nextStory(event) {
+  if (event) event.stopPropagation();
+  const story = stories[currentStoryIdx];
+  if (!story) return;
+  currentItemIdx++;
+  if (currentItemIdx >= story.items.length) {
+    const nextIdx = stories.findIndex((s, i) => i > currentStoryIdx && !s.viewed);
+    if (nextIdx >= 0) {
+      currentStoryIdx = nextIdx;
+      currentItemIdx = 0;
+      startStory();
+    } else if (currentStoryIdx + 1 < stories.length) {
+      currentStoryIdx++;
+      currentItemIdx = 0;
+      startStory();
+    } else {
+      closeStory();
+    }
+  } else {
+    startStory();
+  }
+}
+
+function prevStory(event) {
+  if (event) event.stopPropagation();
+  if (currentItemIdx > 0) {
+    currentItemIdx--;
+    startStory();
+  } else if (currentStoryIdx > 0) {
+    currentStoryIdx--;
+    currentItemIdx = 0;
+    startStory();
+  } else {
+    startStory();
+  }
+}
+
+function closeStory(event) {
+  if (event) event.stopPropagation();
+  clearTimeout(storyTimer);
+  document.getElementById("story-viewer").classList.remove("open");
+  hideReactions();
+  renderStories();
+}
+
+function sendReply() {
+  const input = document.getElementById("story-reply-input");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  hideReactions();
+  showToast(`Reply sent`);
+}
+
+function toggleReactions() {
+  document.getElementById("reactions-drawer").classList.toggle("open");
+}
+
+function hideReactions() {
+  document.getElementById("reactions-drawer").classList.remove("open");
+}
+
+function sendReaction(emoji) {
+  hideReactions();
+  showToast(`Reacted ${emoji}`);
+}
+
+/* ============================================
+   CHAT ROOM
+   ============================================ */
 function openChat(name) {
   currentChatName = name;
   document.getElementById("chat-name").textContent = name;
@@ -530,7 +1769,7 @@ function cancelLongPress() {
   }
 }
 
-function hideReactions() {
+function hideChatReactions() {
   document.getElementById("reactions-bar").classList.remove("open");
 }
 
@@ -540,12 +1779,10 @@ function react(emoji) {
   if (!msgs) return;
   const msg = msgs[currentMsgReactionTarget];
   if (!msg) return;
-
   if (!msg.reactions) msg.reactions = [];
   msg.reactions.push(emoji);
-
   showToast(`Reacted ${emoji}`);
-  hideReactions();
+  hideChatReactions();
   renderMessages();
 }
 
@@ -561,13 +1798,7 @@ function sendMsg() {
   const now = new Date();
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const newMsg = {
-    text,
-    own: true,
-    time,
-    status: "sending",
-    id: Date.now()
-  };
+  const newMsg = { text, own: true, time, status: "sending", id: Date.now() };
 
   messagesDB[currentChatName].push(newMsg);
   input.value = "";
@@ -598,15 +1829,26 @@ function sendMsg() {
   }, 2200);
 }
 
-/* ==================== TABS ==================== */
+/* ============================================
+   TABS
+   ============================================ */
 function switchTab(name, el) {
   document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-  document.getElementById("tab-" + name).classList.add("active");
+  const target = document.getElementById("tab-" + name);
+  if (target) {
+    target.classList.add("active");
+  } else if (name === "kabootar") {
+    // Kabootar AI tab — show toast
+    showToast("🕊️ Kabootar AI coming soon");
+    return;
+  }
   document.querySelectorAll(".tabs .tab").forEach(t => t.classList.remove("active"));
   el.classList.add("active");
 }
 
-/* ==================== UTILS ==================== */
+/* ============================================
+   UTILS
+   ============================================ */
 function escapeQuotes(str) {
   return str.replace(/'/g, "\\'");
 }
@@ -623,10 +1865,13 @@ function showQRModal() {
   showToast("QR: kabootar://u/kb_aarav_01");
 }
 
-/* ==================== INIT ==================== */
+/* ============================================
+   INIT
+   ============================================ */
 renderChats();
 renderContacts();
 renderCalls();
+renderStories();
 
 // Prevent zoom on double-tap
 let lastTouchEnd = 0;
@@ -635,7 +1880,15 @@ document.addEventListener('touchend', (e) => {
   if (now - lastTouchEnd <= 300) e.preventDefault();
   lastTouchEnd = now;
 }, { passive: false });
+
+// Keyboard shortcuts for story viewer
+document.addEventListener("keydown", (e) => {
+  if (!document.getElementById("story-viewer").classList.contains("open")) return;
+  if (e.key === "ArrowRight") nextStory();
+  if (e.key === "ArrowLeft") prevStory();
+  if (e.key === "Escape") closeStory();
+});
 </script>
 
 </body>
-        </html>
+  </html>
