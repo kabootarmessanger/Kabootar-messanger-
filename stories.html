@@ -2,436 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#C85A32">
-<title>🕊️ Stories · Kabootar</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>📖 Stories · Kabootar</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
-html, body { height: 100%; overflow: hidden; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #0F172A;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #0F172A;
-}
-.phone {
-  width: 100vw;
-  max-width: 430px;
-  height: 100vh;
-  max-height: 932px;
-  background: #F8FAFC;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-@media (min-width: 500px) {
-  .phone { border-radius: 40px; height: 92vh; box-shadow: 0 0 60px rgba(0,0,0,0.5); }
-}
-
-/* Top Bar */
-.top-bar {
-  background: #C85A32;
-  color: #FFF;
-  padding: 14px 16px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.top-bar .back {
-  font-size: 22px; cursor: pointer;
-  padding: 4px 8px 4px 0;
-  line-height: 1;
-}
-.top-bar .logo { font-size: 20px; }
-.top-bar .title { font-size: 17px; font-weight: 700; flex: 1; }
-.top-bar .icon-btn {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; cursor: pointer;
-}
-.top-bar .icon-btn:active { background: rgba(255,255,255,0.3); }
-
-/* Header */
-.screen-header { padding: 20px 16px 4px; flex-shrink: 0; }
-.screen-header h1 {
-  font-size: 30px; font-weight: 800;
-  letter-spacing: -0.8px; line-height: 1;
-}
-.screen-header .sub {
-  font-size: 13px; color: #64748B; margin-top: 4px;
-}
-
-/* My Story */
-.my-story-card {
-  display: flex; align-items: center;
-  padding: 12px 16px;
-  margin: 16px 16px 8px;
-  background: #FFF;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.my-story-card:active { transform: scale(0.98); }
-.my-story-avatar {
-  position: relative;
-  width: 56px; height: 56px;
-  flex-shrink: 0;
-}
-.my-story-avatar .avatar { width: 56px; height: 56px; font-size: 20px; }
-.my-story-avatar .plus {
-  position: absolute;
-  bottom: -2px; right: -2px;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: #C85A32;
-  color: #FFF;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 700;
-  border: 2px solid #FFF;
-}
-.my-story-info { flex: 1; margin-left: 12px; }
-.my-story-info .title { font-size: 15px; font-weight: 600; color: #0F172A; }
-.my-story-info .sub { font-size: 12px; color: #64748B; margin-top: 3px; }
-
-/* Section title */
-.section-title {
-  padding: 20px 16px 8px;
-  font-size: 11px; font-weight: 700;
-  color: #64748B;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-/* Story Tray */
-.story-tray {
-  display: flex;
-  gap: 14px;
-  padding: 4px 16px 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex-shrink: 0;
-}
-.story-tray::-webkit-scrollbar { display: none; }
-.story-ring {
-  display: flex; flex-direction: column; align-items: center;
-  cursor: pointer; flex-shrink: 0; width: 76px;
-}
-.story-ring .circle {
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  padding: 3px;
-  background: #C85A32;
-  transition: transform 0.15s;
-}
-.story-ring:active .circle { transform: scale(0.94); }
-.story-ring.viewed .circle { background: #CBD5E1; }
-.story-ring .inner {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  padding: 2px;
-  background: #FFF;
-  position: relative;
-}
-.story-ring .inner .avatar {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #C85A32;
-  display: flex; align-items: center; justify-content: center;
-  color: #FFF; font-weight: 700; font-size: 22px;
-}
-.story-ring .inner .avatar img {
-  width: 100%; height: 100%; object-fit: cover;
-}
-.story-ring .inner .time-badge {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15,23,42,0.85);
-  color: #FFF;
-  font-size: 9px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 100px;
-  white-space: nowrap;
-}
-.story-ring .label {
-  font-size: 12px;
-  color: #334155;
-  margin-top: 8px;
-  font-weight: 500;
-  text-align: center;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  width: 100%;
-}
-
-/* Recently Viewed List */
-.viewed-list {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 20px;
-}
-.viewed-list::-webkit-scrollbar { width: 0; }
-.item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  margin: 0 12px 4px;
-  background: #FFF;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-.item:active { transform: scale(0.98); background: #F1F5F9; }
-.avatar {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: #C85A32;
-  display: flex; align-items: center; justify-content: center;
-  color: #FFF; font-weight: 700; font-size: 18px;
-  flex-shrink: 0; overflow: hidden;
-  position: relative;
-}
-.avatar.sm { width: 44px; height: 44px; font-size: 15px; }
-.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.item .info { flex: 1; margin-left: 12px; min-width: 0; }
-.item .name {
-  font-weight: 600; color: #0F172A; font-size: 15px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.item .preview {
-  color: #64748B; font-size: 13px; margin-top: 3px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  display: flex; align-items: center; gap: 4px;
-}
-.eye-icon { font-size: 14px; color: #10B981; }
-
-/* Empty */
-.empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: #94A3B8;
-}
-.empty .icon { font-size: 40px; margin-bottom: 8px; opacity: 0.5; }
-
-/* Story Viewer */
-.story-viewer {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: #000;
-  display: none;
-  z-index: 200;
-  flex-direction: column;
-}
-.story-viewer.open { display: flex; }
-
-/* Progress bars — one per segment */
-.story-progress-container {
-  position: absolute;
-  top: 14px; left: 8px; right: 8px;
-  display: flex;
-  gap: 3px;
-  z-index: 5;
-}
-.progress-segment {
-  flex: 1;
-  height: 3px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 100px;
-  overflow: hidden;
-}
-.progress-segment .fill {
-  height: 100%;
-  width: 0%;
-  background: #FFF;
-  border-radius: 100px;
-}
-.progress-segment.done .fill { width: 100%; }
-.progress-segment.active .fill {
-  animation: fillBar 5s linear forwards;
-}
-@keyframes fillBar {
-  from { width: 0%; }
-  to { width: 100%; }
-}
-
-/* Header */
-.story-header {
-  position: absolute;
-  top: 26px; left: 12px; right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 5;
-}
-.story-header .avatar { width: 40px; height: 40px; font-size: 15px; }
-.story-header .info {
-  flex: 1; min-width: 0;
-}
-.story-header .name {
-  color: #FFF; font-weight: 600; font-size: 15px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.story-header .time {
-  color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 2px;
-}
-.story-header .close-btn {
-  color: #FFF; font-size: 26px;
-  cursor: pointer; padding: 4px 8px; line-height: 1;
-}
-
-/* Image */
-.story-image {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-}
-
-/* Caption */
-.story-caption {
-  position: absolute;
-  top: 50%;
-  left: 0; right: 0;
-  transform: translateY(-50%);
-  color: #FFF;
-  font-size: 26px;
-  font-weight: 700;
-  text-align: center;
-  padding: 0 32px;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.7);
-  z-index: 4;
-}
-
-/* Navigation zones (tap left/right) */
-.nav-zone {
-  position: absolute;
-  top: 80px; bottom: 100px;
-  width: 35%;
-  z-index: 3;
-  cursor: pointer;
-}
-.nav-zone.left { left: 0; }
-.nav-zone.right { right: 0; }
-
-/* Reply Bar */
-.story-reply {
-  position: absolute;
-  bottom: 24px;
-  left: 12px; right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 5;
-}
-.story-reply .input {
-  flex: 1;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 100px;
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  backdrop-filter: blur(12px);
-}
-.story-reply input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #FFF;
-  font-size: 15px;
-  font-family: inherit;
-}
-.story-reply input::placeholder { color: rgba(255,255,255,0.7); }
-.story-reply .emoji-btn {
-  font-size: 22px; cursor: pointer; padding: 4px 8px;
-}
-.story-reply .send-btn {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: #C85A32;
-  color: #FFF;
-  border: none;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.15s;
-}
-.story-reply .send-btn:active { transform: scale(0.9); }
-
-/* Reaction Drawer */
-.reactions-drawer {
-  position: absolute;
-  bottom: 90px;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  display: flex;
-  gap: 6px;
-  padding: 10px 14px;
-  background: rgba(15,23,42,0.9);
-  border-radius: 100px;
-  backdrop-filter: blur(12px);
-  z-index: 6;
-  opacity: 0;
-  transition: all 0.2s;
-  pointer-events: none;
-}
-.reactions-drawer.open {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-.reaction-emoji {
-  font-size: 26px;
-  background: none;
-  border: none;
-  padding: 4px 6px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: transform 0.15s;
-}
-.reaction-emoji:active { transform: scale(1.3); }
-
-/* Toast */
-.toast {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: rgba(15, 23, 42, 0.95);
-  color: #FFF;
-  padding: 12px 20px;
-  border-radius: 100px;
-  font-size: 14px;
-  opacity: 0;
-  transition: all 0.25s;
-  pointer-events: none;
-  z-index: 999;
-  backdrop-filter: blur(12px);
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="phone">
+<div class="app">
 
   <!-- Top Bar -->
   <div class="top-bar">
     <span class="back" onclick="goHome()">←</span>
     <span class="logo">📖</span>
     <span class="title">Stories</span>
-    <div class="icon-btn" onclick="showToast('Camera coming soon')">📷</div>
-    <div class="icon-btn" onclick="showToast('New story')">✏️</div>
   </div>
 
   <!-- Header -->
@@ -441,14 +28,14 @@ body {
   </div>
 
   <!-- My Story -->
-  <div class="my-story-card" onclick="addMyStory()">
-    <div class="my-story-avatar">
-      <div class="avatar">AS</div>
-      <div class="plus">+</div>
+  <div class="item" style="margin:0 16px 8px" onclick="addMyStory()">
+    <div style="position:relative;width:56px;height:56px;flex-shrink:0">
+      <div class="avatar" style="width:56px;height:56px;font-size:20px">AS</div>
+      <div style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:#C85A32;color:#FFF;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;border:2px solid #FFF">+</div>
     </div>
-    <div class="my-story-info">
-      <div class="title">My Story</div>
-      <div class="sub">Tap to add to your story</div>
+    <div class="info">
+      <div class="name">My Story</div>
+      <div class="preview">Tap to add to your story</div>
     </div>
   </div>
 
@@ -458,29 +45,27 @@ body {
 
   <!-- Viewed -->
   <div class="section-title">Recently Viewed</div>
-  <div class="viewed-list" id="viewed-list"></div>
+  <div class="list" style="padding-top:0;padding-bottom:90px" id="viewed-list"></div>
 
   <!-- Story Viewer -->
   <div class="story-viewer" id="story-viewer">
     <div class="story-progress-container" id="progress-container"></div>
-    
+
     <div class="story-header">
       <div class="avatar" id="story-avatar">?</div>
       <div class="info">
         <div class="name" id="story-name">User</div>
         <div class="time" id="story-time">just now</div>
       </div>
-      <div class="close-btn" onclick="closeStory(event)">✕</div>
+      <button class="close-btn" onclick="closeStory(event)">✕</button>
     </div>
-    
+
     <img class="story-image" id="story-image" src="" alt="">
     <div class="story-caption" id="story-caption"></div>
-    
-    <!-- Tap zones -->
+
     <div class="nav-zone left" onclick="prevStory(event)"></div>
     <div class="nav-zone right" onclick="nextStory(event)"></div>
-    
-    <!-- Reactions Drawer -->
+
     <div class="reactions-drawer" id="reactions-drawer">
       <button class="reaction-emoji" onclick="sendReaction('❤️')">❤️</button>
       <button class="reaction-emoji" onclick="sendReaction('😂')">😂</button>
@@ -489,16 +74,37 @@ body {
       <button class="reaction-emoji" onclick="sendReaction('🔥')">🔥</button>
       <button class="reaction-emoji" onclick="sendReaction('👏')">👏</button>
     </div>
-    
-    <!-- Reply -->
+
     <div class="story-reply">
       <div class="input">
         <input type="text" placeholder="Reply to story..." id="story-reply-input"
                onfocus="hideReactions()"
                onkeypress="if(event.key==='Enter') sendReply()">
-        <span class="emoji-btn" onclick="toggleReactions()">😊</span>
+        <button class="emoji-btn" onclick="toggleReactions()">😊</button>
       </div>
       <button class="send-btn" onclick="sendReply()">➤</button>
+    </div>
+  </div>
+
+  <!-- Bottom Tabs -->
+  <div class="tabs">
+    <div class="tab" onclick="goHome()">
+      <div class="tab-icon">👥</div><div class="tab-label">Contacts</div>
+    </div>
+    <div class="tab active" onclick="goHome()">
+      <div class="tab-icon">📖</div><div class="tab-label">Stories</div>
+    </div>
+    <div class="tab" onclick="goHome()">
+      <div class="tab-icon">💬</div><div class="tab-label">Chats</div>
+    </div>
+    <div class="tab" onclick="goHome()">
+      <div class="tab-icon">📞</div><div class="tab-label">Calls</div>
+    </div>
+    <div class="tab" onclick="goHome()">
+      <div class="tab-icon">👤</div><div class="tab-label">Profile</div>
+    </div>
+    <div class="tab" onclick="showToast('🕊️ Kabootar AI coming soon')">
+      <div class="tab-icon">🕊️</div><div class="tab-label">Kabootar</div>
     </div>
   </div>
 
@@ -569,20 +175,17 @@ const stories = [
 let currentStoryIdx = 0;
 let currentItemIdx = 0;
 let storyTimer = null;
-let viewedStories = [];
 
 /* ==================== RENDER ==================== */
 function renderStories() {
   const tray = document.getElementById("story-tray");
   const viewed = document.getElementById("viewed-list");
 
-  // Unviewed stories in tray
   const unviewed = stories.filter(s => !s.viewed);
-  tray.innerHTML = unviewed.length 
+  tray.innerHTML = unviewed.length
     ? unviewed.map(s => storyRingHTML(s)).join("")
-    : `<div class="empty" style="padding:20px;width:100%"><p style="font-size:13px">All caught up ✨</p></div>`;
+    : `<div style="padding:20px;color:#94A3B8;font-size:13px">All caught up ✨</div>`;
 
-  // Viewed stories in list
   const viewedList = stories.filter(s => s.viewed);
   viewed.innerHTML = viewedList.length
     ? viewedList.map(s => viewedItemHTML(s)).join("")
@@ -591,6 +194,7 @@ function renderStories() {
 
 function storyRingHTML(s) {
   const initials = s.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  const timeShort = s.time.split(' ')[0] + s.time.split(' ')[1][0];
   return `
     <div class="story-ring ${s.viewed ? 'viewed' : ''}" onclick="openStory(${s.id})">
       <div class="circle">
@@ -598,7 +202,6 @@ function storyRingHTML(s) {
           <div class="avatar">
             <img src="${s.avatar}" alt="${s.name}" onerror="this.style.display='none'; this.parentNode.textContent='${initials}'">
           </div>
-          <div class="time-badge">${s.time.split(' ')[0]}${s.time.split(' ')[1][0]}</div>
         </div>
       </div>
       <div class="label">${s.name.split(' ')[0]}</div>
@@ -617,7 +220,7 @@ function viewedItemHTML(s) {
       <div class="info">
         <div class="name">${s.name}</div>
         <div class="preview">
-          <span class="eye-icon">👁</span>
+          <span style="color:#10B981;font-size:14px">👁</span>
           ${itemCount} ${itemCount === 1 ? 'photo' : 'photos'} · ${s.time}
         </div>
       </div>
@@ -640,14 +243,12 @@ function startStory() {
   if (!story) return;
   story.viewed = true;
 
-  // Header
   const initials = story.name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
   document.getElementById("story-name").textContent = story.name;
   document.getElementById("story-time").textContent = story.time;
   const avatarEl = document.getElementById("story-avatar");
   avatarEl.innerHTML = `<img src="${story.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentNode.textContent='${initials}'">`;
 
-  // Progress segments
   const progressContainer = document.getElementById("progress-container");
   progressContainer.innerHTML = story.items.map((_, i) => {
     let cls = "";
@@ -656,15 +257,12 @@ function startStory() {
     return `<div class="progress-segment ${cls}"><div class="fill"></div></div>`;
   }).join("");
 
-  // Content
   const item = story.items[currentItemIdx];
   document.getElementById("story-image").src = item.image;
   document.getElementById("story-caption").textContent = item.caption || "";
 
-  // Show viewer
   document.getElementById("story-viewer").classList.add("open");
 
-  // Auto-advance
   clearTimeout(storyTimer);
   storyTimer = setTimeout(() => nextStory(), 5000);
 
@@ -677,21 +275,17 @@ function nextStory(event) {
   if (!story) return;
   currentItemIdx++;
   if (currentItemIdx >= story.items.length) {
-    // Move to next story
     const nextIdx = stories.findIndex((s, i) => i > currentStoryIdx && !s.viewed);
     if (nextIdx >= 0) {
       currentStoryIdx = nextIdx;
       currentItemIdx = 0;
       startStory();
+    } else if (currentStoryIdx + 1 < stories.length) {
+      currentStoryIdx++;
+      currentItemIdx = 0;
+      startStory();
     } else {
-      // Try any next story
-      if (currentStoryIdx + 1 < stories.length) {
-        currentStoryIdx++;
-        currentItemIdx = 0;
-        startStory();
-      } else {
-        closeStory();
-      }
+      closeStory();
     }
   } else {
     startStory();
@@ -700,7 +294,6 @@ function nextStory(event) {
 
 function prevStory(event) {
   if (event) event.stopPropagation();
-  const story = stories[currentStoryIdx];
   if (currentItemIdx > 0) {
     currentItemIdx--;
     startStory();
@@ -709,7 +302,6 @@ function prevStory(event) {
     currentItemIdx = 0;
     startStory();
   } else {
-    // Already at first
     startStory();
   }
 }
@@ -765,7 +357,6 @@ function showToast(msg) {
 /* ==================== INIT ==================== */
 renderStories();
 
-// Prevent double-tap zoom
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
   const now = Date.now();
@@ -773,7 +364,6 @@ document.addEventListener('touchend', (e) => {
   lastTouchEnd = now;
 }, { passive: false });
 
-// Keyboard shortcuts (desktop)
 document.addEventListener("keydown", (e) => {
   if (!document.getElementById("story-viewer").classList.contains("open")) return;
   if (e.key === "ArrowRight") nextStory();
@@ -783,4 +373,4 @@ document.addEventListener("keydown", (e) => {
 </script>
 
 </body>
-  </html>
+</html>
