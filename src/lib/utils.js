@@ -26,12 +26,28 @@ export function formatSize(b) {
   return (b / 1024 / 1024).toFixed(2) + " MB";
 }
 
-export const TIMER_OPTIONS = [
-  { label: "5s", seconds: 5 },
-  { label: "30s", seconds: 30 },
-  { label: "1 min", seconds: 60 },
-  { label: "5 min", seconds: 300 },
-  { label: "1 hr", seconds: 3600 },
-  { label: "24 hr", seconds: 86400 },
-  { label: "7 days", seconds: 604800 }
-];
+export function todayStr() {
+  return new Date().toDateString();
+}
+
+export function yesterdayStr() {
+  return new Date(Date.now() - 86400000).toDateString();
+}
+
+export function downloadText(filename, text) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+export function downloadJSON(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
