@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --p: #C85A32;
+  --pl: #FDF2EE;
+  --bg: #FFFFFF;
+  --bg2: #F7F8FA;
+  --bg3: #F0F2F5;
+  --chatbg: #EFEAE2;
+  --text: #111B21;
+  --text2: #667781;
+  --text3: #8696A0;
+  --bd2: #F0F2F5;
+  --in: #FFFFFF;
+  --out: #DCF8C6;
+}
+
+.dark {
+  --bg: #111B21;
+  --bg2: #202C33;
+  --bg3: #2A3942;
+  --chatbg: #0B141A;
+  --text: #E9EDEF;
+  --text2: #8696A0;
+  --text3: #8696A0;
+  --bd2: #2A3942;
+  --in: #202C33;
+  --out: #005C4B;
+  --pl: rgba(200, 90, 50, 0.15);
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.bg-app { background: var(--bg); }
+.bg-app2 { background: var(--bg2); }
+.bg-app3 { background: var(--bg3); }
+.bg-chat { background: var(--chatbg); }
+.text-app { color: var(--text); }
+.text-app2 { color: var(--text2); }
+.text-app3 { color: var(--text3); }
+.border-app { border-color: var(--bd2); }
+.bg-bubble-in { background: var(--in); }
+.bg-bubble-out { background: var(--out); }
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-msgIn { animation: msgIn .15s ease-out; }
+
+@keyframes blink {
+  50% { opacity: .3; }
+}
+.animate-blink { animation: blink 1s infinite; }
