@@ -1,6 +1,6 @@
 "use client";
 import Modal from "./Modal";
-import { makeQRSvg } from "@/lib/qrcode";
+import { makeQRSvg } from "../lib/qrcode";
 
 export default function QRCodeModal({ open, onClose, profile }) {
   if (!open) return null;
