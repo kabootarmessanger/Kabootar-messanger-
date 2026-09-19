@@ -1,7 +1,7 @@
 "use client";
 import Modal from "./Modal";
-import { LANGUAGES } from "@/lib/i18n";
-import { useApp } from "@/context/AppContext";
+import { LANGUAGES } from "../lib/i18n";
+import { useApp } from "../context/AppContext";
 
 export default function LanguageModal({ open, onClose }) {
   const { language, setLanguage } = useApp();
