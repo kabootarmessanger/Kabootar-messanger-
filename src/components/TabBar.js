@@ -13,7 +13,7 @@ export default function TabBar({ active, onChange }) {
   const unread = chats.reduce((a, c) => a + (c.unread || 0), 0);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-w-app mx-auto flex bg-primary z-[100]">
+    <div className="fixed bottom-0 left-0 right-0 max-w-app mx-auto flex bg-primary z-[100] pb-[env(safe-area-inset-bottom)]">
       {TABS.map((t) => (
         <button
           key={t.id}

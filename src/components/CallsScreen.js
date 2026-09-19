@@ -2,18 +2,16 @@
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import Avatar from "./Avatar";
-import CallScreen from "./CallScreen";
 
-export default function CallsScreen() {
-  const { calls, toggleTheme } = useApp();
+export default function CallsScreen({ onStartCall }) {
+  const { callLog, toggleTheme } = useApp();
   const [filter, setFilter] = useState("all");
-  const [activeCall, setActiveCall] = useState(null);
 
-  const filtered = filter === "all" ? calls : calls.filter((c) => c.status === "missed");
+  const filtered = filter === "all" ? callLog : callLog.filter((c) => c.status === "missed");
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-primary text-white px-2 pt-2 min-h-14 flex items-center gap-0.5 shadow">
+      <div className="bg-primary text-white px-2 pt-[max(0.5rem,env(safe-area-inset-top))] min-h-14 flex items-center gap-0.5 shadow">
         <h1 className="text-xl font-semibold flex-1 px-3">Calls</h1>
         <button onClick={toggleTheme} className="w-11 h-11 text-xl">🌙</button>
       </div>
@@ -42,7 +40,7 @@ export default function CallsScreen() {
             const missed = c.status === "missed";
             const dir = c.status === "incoming" ? "↙️" : c.status === "outgoing" ? "↗️" : "↙️";
             return (
-              <div key={i} onClick={() => setActiveCall(c)} className="flex items-center gap-3.5 px-4 py-3 cursor-pointer active:bg-app2">
+              <div key={i} onClick={() => onStartCall(c.name, c.type, c.isGroup, c.members)} className="flex items-center gap-3.5 px-4 py-3 cursor-pointer active:bg-app2">
                 <Avatar src={c.avatar} name={c.name} size={56} />
                 <div className="flex-1 min-w-0">
                   <div className={`text-base font-medium truncate ${missed ? "text-red-500" : "text-app"}`}>{c.name}</div>
@@ -57,7 +55,6 @@ export default function CallsScreen() {
           })
         )}
       </div>
-      <CallScreen call={activeCall} onEnd={() => setActiveCall(null)} />
     </div>
   );
 }
