@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { ensureUserDoc } from "@/lib/realChat";
+import { ensureUserDoc, normalizePhone } from "@/lib/realChat";
 import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
@@ -74,7 +74,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const fullPhone = phone.trim().startsWith("+") ? phone.trim() : `+91${phone.trim()}`;
+      const fullPhone = normalizePhone(phone);
       await sendSignInLinkToEmail(auth, email.trim(), {
         url: window.location.href,
         handleCodeInApp: true
