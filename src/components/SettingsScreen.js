@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useApp } from "@/context/AppContext";
 import Avatar from "./Avatar";
 import Modal from "./Modal";
@@ -23,6 +26,8 @@ export default function SettingsScreen() {
     screenshotProof, setScreenshotProof, incognitoKeyboard, setIncognitoKeyboard,
     geminiKey, unlockedAchievements
   } = useApp();
+
+  const router = useRouter();
 
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState(profile.name);
@@ -72,6 +77,16 @@ export default function SettingsScreen() {
     setTwoFAEnabled(false);
     setBackupCodes([]);
     showToast("2FA disabled");
+  };
+
+  const handleLogout = async () => {
+    if (!window.confirm("Log out of Kabootar?")) return;
+    try {
+      await signOut(auth);
+      router.replace("/login");
+    } catch (e) {
+      showToast("Logout failed, try again");
+    }
   };
 
   const Row = ({ icon, label, value, onClick }) => (
@@ -139,7 +154,7 @@ export default function SettingsScreen() {
         <div className="px-4 pt-5 pb-2 text-xs font-semibold text-primary">App</div>
         <Row icon="ℹ️" label="About" onClick={() => setAboutOpen(true)} />
 
-        <div className="m-6 p-4 bg-app rounded-xl text-center text-red-500 font-semibold border border-red-200 cursor-pointer" onClick={() => showToast("Logged out")}>
+        <div className="m-6 p-4 bg-app rounded-xl text-center text-red-500 font-semibold border border-red-200 cursor-pointer" onClick={handleLogout}>
           Log Out
         </div>
       </div>
