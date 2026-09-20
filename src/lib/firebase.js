@@ -21,28 +21,3 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-import { auth } from '../firebase'; // अपना पाथ चेक कर लें
-import { signInWithEmailAndPassword } from "firebase/auth";
-
-const handleLogin = async (email, password) => {
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    console.log("Login successful!");
-  } catch (error) {
-    console.error("Error logging in: ", error.message);
-  }
-};
-import { db } from '../firebase';
-import { collection, addDoc } from "firebase/firestore"; 
-
-const sendMessage = async (chatId, messageText, senderId) => {
-  try {
-    await addDoc(collection(db, "chats", chatId, "messages"), {
-      text: messageText,
-      sender: senderId,
-      createdAt: new Date()
-    });
-  } catch (e) {
-    console.error("Error adding document: ", e);
-  }
-};
