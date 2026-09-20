@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { findUserByIdentifier, getOrCreateChat, getUserProfile, listenToMyChats } from "@/lib/realChat";
+import { findUserByIdentifier, findUsersByPhones, getOrCreateChat, getUserProfile, listenToMyChats } from "@/lib/realChat";
 import Avatar from "./Avatar";
 import Modal from "./Modal";
 import RealChatRoom from "./RealChatRoom";
@@ -18,6 +18,9 @@ export default function ContactsScreen({ onOpenChat }) {
   const [realChats, setRealChats] = useState([]);
   const [activeReal, setActiveReal] = useState(null); // { chatId, otherUser }
   const [myProfile, setMyProfile] = useState(null);
+  const [syncSupported, setSyncSupported] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(null); // { matched: [...], total: n } | null
 
   useEffect(() => {
     if (!user) return;
@@ -26,10 +29,47 @@ export default function ContactsScreen({ onOpenChat }) {
     return unsub;
   }, [user]);
 
+  useEffect(() => {
+    setSyncSupported(typeof navigator !== "undefined" && "contacts" in navigator && "ContactsManager" in window);
+  }, []);
+
   const filtered = useMemo(
     () => contacts.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
     [contacts, query]
   );
+
+  const me = () => ({
+    uid: user.uid,
+    email: user.email,
+    name: myProfile?.name || user.displayName,
+    phoneNumber: myProfile?.phoneNumber
+  });
+
+  const handleSyncContacts = async () => {
+    if (!syncSupported) {
+      alert(
+        "Phone contacts sync sirf Chrome for Android pe kaam karta hai — Safari/iPhone aur desktop browsers privacy ki wajah se web apps ko contacts access nahi dene dete."
+      );
+      return;
+    }
+    setSyncing(true);
+    try {
+      const picked = await navigator.contacts.select(["name", "tel"], { multiple: true });
+      const numbers = picked.flatMap((p) => p.tel || []);
+      const matches = await findUsersByPhones(numbers);
+      const filteredMatches = matches.filter((m) => m.uid !== user.uid);
+      setSynced({ matched: filteredMatches, total: numbers.length });
+    } catch (err) {
+      // User cancelled the picker, or permission was blocked — not an error worth surfacing.
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const openMatchedContact = async (other) => {
+    const chatId = await getOrCreateChat(me(), other);
+    setActiveReal({ chatId, otherUser: other });
+  };
 
   const handleFind = async (e) => {
     e.preventDefault();
@@ -48,13 +88,7 @@ export default function ContactsScreen({ onOpenChat }) {
         setFindError("Is number/email se koi Kabootar account nahi mila");
         return;
       }
-      const me = {
-        uid: user.uid,
-        email: user.email,
-        name: myProfile?.name || user.displayName,
-        phoneNumber: myProfile?.phoneNumber
-      };
-      const chatId = await getOrCreateChat(me, other);
+      const chatId = await getOrCreateChat(me(), other);
       setFindOpen(false);
       setFindValue("");
       setActiveReal({ chatId, otherUser: other });
@@ -84,6 +118,14 @@ export default function ContactsScreen({ onOpenChat }) {
           />
         </div>
         <button
+          onClick={handleSyncContacts}
+          disabled={syncing}
+          className="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xl shrink-0 disabled:opacity-60"
+          title="Sync your phone contacts"
+        >
+          {syncing ? "⏳" : "📱"}
+        </button>
+        <button
           onClick={() => setFindOpen(true)}
           className="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xl shrink-0"
           title="Find a real Kabootar user by phone number"
@@ -93,6 +135,29 @@ export default function ContactsScreen({ onOpenChat }) {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-24">
+        {synced && (
+          <>
+            <div className="px-4 pt-4 pb-2 text-xs font-semibold text-primary">
+              📱 From Your Phone {synced.matched.length > 0 && `(${synced.matched.length} on Kabootar)`}
+            </div>
+            {synced.matched.length === 0 ? (
+              <div className="px-4 pb-3 text-xs text-app3">
+                {synced.total} contacts check kiye — inme se koi Kabootar pe nahi mila abhi.
+              </div>
+            ) : (
+              synced.matched.map((m) => (
+                <div key={m.uid} onClick={() => openMatchedContact(m)} className="flex items-center gap-3.5 px-4 py-3 border-b border-app cursor-pointer">
+                  <Avatar name={m.name} size={48} />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm text-app">{m.name}</div>
+                    <div className="text-xs text-app3 mt-0.5">{m.phoneNumber}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
+
         {realChats.length > 0 && (
           <>
             <div className="px-4 pt-4 pb-2 text-xs font-semibold text-primary">Real Kabootar Chats</div>
