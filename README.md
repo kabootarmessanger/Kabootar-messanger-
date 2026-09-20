@@ -1,51 +1,35 @@
-# 🕊️ Kabootar Messenger
+# functions/
 
-A modern messaging & calling web app with terracotta theme.
+This folder is reserved for serverless/backend functions (e.g. real chat
+persistence, auth, push notifications) that the current demo does **not**
+need, since all data lives in the browser (React state + localStorage).
 
-## 🌐 Live Demo
+When you're ready to add a real backend, two common options:
 
-**https://kabootarmessanger.github.io/Kabootar-messanger-/**
+## Option A — Next.js API routes (simplest, no extra hosting)
+Create files under `src/app/api/<name>/route.js`, e.g.:
 
-## ✨ Features
+```js
+// src/app/api/send-message/route.js
+export async function POST(req) {
+  const body = await req.json();
+  // ...save to your database...
+  return Response.json({ ok: true });
+}
+```
 
-- 💬 **Chats** — Search, filters, pinned, unread badges
-- ✓✓ **Read Receipts** — Sent, Delivered, Read ticks
-- 😊 **Reactions** — Long-press to react
-- 📖 **Stories** — 24-hour status with auto-play
-- 👥 **Contacts** — Registered vs invite lists
-- 📞 **Calls** — All/Missed filter, incoming/outgoing
-- 👤 **Profile** — QR code, settings, logout
-- 🕊️ **Kabootar AI** — Coming soon tab
+These deploy automatically with the Next.js app on Vercel/Node hosting —
+no separate "functions" folder needed.
 
-## 🎨 Design
+## Option B — Standalone serverless functions (Firebase / Netlify / AWS)
+If you prefer Firebase Cloud Functions or Netlify Functions, put them here,
+e.g. `functions/sendMessage.js`, and deploy them with that platform's CLI
+(`firebase deploy --only functions`, `netlify deploy`, etc.). They are kept
+separate from `src/` intentionally so the Next.js app and backend functions
+can be deployed independently.
 
-- **Primary:** Terracotta #C85A32
-- **Background:** #F8FAFC  
-- **Read Receipt:** Emerald #10B981
-- **Dark Slate:** #0F172A
-
-## 📱 Install as App
-
-1. Open the live URL in Chrome/Safari
-2. Tap "Add to Home Screen"
-3. Launch like a native app
-
-## 🛠️ Tech
-
-- Pure HTML + CSS + JavaScript
-- No build tools, no dependencies
-- Works offline after first load
-- Single-file architecture
-
-## 🚀 Roadmap
-
-- [x] UI & Navigation
-- [x] Chat & Stories
-- [ ] Real backend (Supabase)
-- [ ] Push notifications
-- [ ] Voice & video calls
-- [ ] E2EE
-
-## 📄 License
-
-MIT
+Suggested next steps for a real backend:
+- Auth: Firebase Auth / Clerk / NextAuth
+- Realtime messages: Firestore, Supabase Realtime, or a WebSocket server
+- Media storage: Firebase Storage / S3 / Cloudinary
+- Push notifications: FCM / OneSignal
