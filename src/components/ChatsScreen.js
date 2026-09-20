@@ -3,12 +3,6 @@ import { useMemo, useRef, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import ChatItem from "./ChatItem";
 import NewChatModal from "./NewChatModal";
-import QuickMenu from "./QuickMenu";
-import AchievementsModal from "./AchievementsModal";
-import AnalyticsModal from "./AnalyticsModal";
-import BusinessModal from "./BusinessModal";
-import BlockedContactsModal from "./BlockedContactsModal";
-import Modal from "./Modal";
 
 const FOLDERS = [
   { id: "all", label: "All" },
@@ -18,16 +12,10 @@ const FOLDERS = [
 ];
 
 export default function ChatsScreen({ onOpenChat }) {
-  const { chats, toggleTheme, theme, starred, showToast, chats: allChats, setChats } = useApp();
+  const { chats } = useApp();
   const [folder, setFolder] = useState("all");
   const [query, setQuery] = useState("");
   const [newChatOpen, setNewChatOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [starredOpen, setStarredOpen] = useState(false);
-  const [achievementsOpen, setAchievementsOpen] = useState(false);
-  const [analyticsOpen, setAnalyticsOpen] = useState(false);
-  const [businessOpen, setBusinessOpen] = useState(false);
-  const [blockedOpen, setBlockedOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const touchStartY = useRef(null);
@@ -63,38 +51,14 @@ export default function ChatsScreen({ onOpenChat }) {
       setRefreshing(true);
       setTimeout(() => {
         setRefreshing(false);
-        showToast("Refreshed");
       }, 700);
     }
     touchStartY.current = null;
   };
 
-  const handleMenuAction = (key) => {
-    if (key === "newGroup") setNewChatOpen(true);
-    if (key === "starred") setStarredOpen(true);
-    if (key === "achievements") setAchievementsOpen(true);
-    if (key === "analytics") setAnalyticsOpen(true);
-    if (key === "business") setBusinessOpen(true);
-    if (key === "blocked") setBlockedOpen(true);
-    if (key === "markAllRead") {
-      setChats((cs) => cs.map((c) => ({ ...c, unread: 0 })));
-      showToast("All marked read");
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-primary text-white px-2 pt-[max(0.5rem,env(safe-area-inset-top))] min-h-14 flex items-center gap-0.5 shadow">
-        <span className="text-2xl ml-1">🕊️</span>
-        <h1 className="text-xl font-semibold flex-1 px-2">Kabootar</h1>
-        <button onClick={toggleTheme} className="w-11 h-11 flex items-center justify-center rounded-full active:bg-white/15 text-xl">
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
-        <button onClick={() => setMenuOpen(true)} className="w-11 h-11 flex items-center justify-center rounded-full active:bg-white/15 text-xl">
-          ⋮
-        </button>
-      </div>
-      <div className="bg-primary px-3 pb-2.5 pt-1.5">
+      <div className="bg-primary px-3 pb-2.5 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="bg-white/15 rounded-full px-3.5 py-2 flex items-center gap-2.5">
           <span className="text-white">🔍</span>
           <input
@@ -140,24 +104,6 @@ export default function ChatsScreen({ onOpenChat }) {
         ✏️
       </button>
       <NewChatModal open={newChatOpen} onClose={() => setNewChatOpen(false)} onOpenChat={onOpenChat} />
-      <QuickMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAction={handleMenuAction} />
-      <AchievementsModal open={achievementsOpen} onClose={() => setAchievementsOpen(false)} />
-      <AnalyticsModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
-      <BusinessModal open={businessOpen} onClose={() => setBusinessOpen(false)} currentChat={null} onShareToChat={() => {}} />
-      <BlockedContactsModal open={blockedOpen} onClose={() => setBlockedOpen(false)} />
-      <Modal open={starredOpen} onClose={() => setStarredOpen(false)} title="⭐ Starred Messages">
-        {starred.length === 0 ? (
-          <div className="text-sm text-app3 text-center py-6">No starred messages</div>
-        ) : (
-          starred.map((s, i) => (
-            <div key={i} className="p-3 bg-app2 rounded-xl mb-2">
-              <div className="text-xs font-semibold text-primary mb-1">{s.chat}</div>
-              <div className="text-sm text-app">{s.text}</div>
-              <div className="text-[11px] text-app3 mt-1.5">{s.time}</div>
-            </div>
-          ))
-        )}
-      </Modal>
     </div>
   );
 }

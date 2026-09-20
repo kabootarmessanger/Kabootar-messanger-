@@ -8,6 +8,7 @@ import Confetti from "./Confetti";
 import ScreenshotAlert from "./ScreenshotAlert";
 import Onboarding from "./Onboarding";
 import ChatsScreen from "./ChatsScreen";
+import ContactsScreen from "./ContactsScreen";
 import StatusScreen from "./StatusScreen";
 import CallsScreen from "./CallsScreen";
 import SettingsScreen from "./SettingsScreen";
@@ -86,10 +87,11 @@ export default function AppShell() {
 
   return (
     <div className="w-full h-dvh max-w-app mx-auto bg-app relative overflow-hidden flex flex-col">
+      {tab === "contacts" && <ContactsScreen onOpenChat={handleOpenChat} />}
       {tab === "chats" && <ChatsScreen onOpenChat={handleOpenChat} />}
       {tab === "status" && <StatusScreen />}
       {tab === "calls" && <CallsScreen onStartCall={handleStartCall} />}
-      {tab === "settings" && <SettingsScreen />}
+      {tab === "profile" && <SettingsScreen onOpenChat={handleOpenChat} />}
 
       <TabBar active={tab} onChange={setTab} />
 

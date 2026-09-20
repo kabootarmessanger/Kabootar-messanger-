@@ -14,14 +14,15 @@ import AchievementsModal from "./AchievementsModal";
 import AnalyticsModal from "./AnalyticsModal";
 import BusinessModal from "./BusinessModal";
 import BlockedContactsModal from "./BlockedContactsModal";
+import NewChatModal from "./NewChatModal";
 import { AISettingsModal } from "./AIModals";
 import { FONT_SIZES } from "@/data/seed";
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ onOpenChat }) {
   const {
     profile, setProfile, theme, toggleTheme, fontSize, setFontSize,
     sound, setSound, vibration, setVibration, ghost, setGhost, receipts, setReceipts,
-    starred, blockList, pin, setPin, showToast,
+    starred, blockList, pin, setPin, showToast, setChats,
     twoFAEnabled, setTwoFAEnabled, backupCodes, setBackupCodes,
     screenshotProof, setScreenshotProof, incognitoKeyboard, setIncognitoKeyboard,
     geminiKey, unlockedAchievements
@@ -47,6 +48,12 @@ export default function SettingsScreen() {
   const [businessOpen, setBusinessOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
+  const [newGroupOpen, setNewGroupOpen] = useState(false);
+
+  const markAllRead = () => {
+    setChats((cs) => cs.map((c) => ({ ...c, unread: 0 })));
+    showToast("All marked read");
+  };
 
   const saveProfile = () => {
     setProfile({ ...profile, name, bio });
@@ -107,7 +114,7 @@ export default function SettingsScreen() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-primary text-white px-2 pt-[max(0.5rem,env(safe-area-inset-top))] min-h-14 flex items-center gap-0.5 shadow">
-        <h1 className="text-xl font-semibold flex-1 px-3">Settings</h1>
+        <h1 className="text-xl font-semibold flex-1 px-3">Profile</h1>
         <button onClick={toggleTheme} className="w-11 h-11 text-xl">🌙</button>
       </div>
       <div className="flex-1 overflow-y-auto pb-24">
@@ -119,6 +126,10 @@ export default function SettingsScreen() {
           <div className="text-sm text-app2">{profile.bio}</div>
           <div className="text-xs text-primary font-semibold mt-1.5">{profile.handle}</div>
         </div>
+
+        <div className="px-4 pt-5 pb-2 text-xs font-semibold text-primary">Quick Actions</div>
+        <Row icon="👥" label="New Group" onClick={() => setNewGroupOpen(true)} />
+        <Row icon="✅" label="Mark All Chats Read" onClick={markAllRead} />
 
         <div className="px-4 pt-5 pb-2 text-xs font-semibold text-primary">Business</div>
         <Row icon="💼" label="Business Tools" onClick={() => setBusinessOpen(true)} />
@@ -263,6 +274,15 @@ export default function SettingsScreen() {
       <AnalyticsModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
       <BusinessModal open={businessOpen} onClose={() => setBusinessOpen(false)} currentChat={null} onShareToChat={() => {}} />
       <AISettingsModal open={aiOpen} onClose={() => setAiOpen(false)} />
+      <NewChatModal
+        open={newGroupOpen}
+        onClose={() => setNewGroupOpen(false)}
+        onOpenChat={(name) => {
+          setNewGroupOpen(false);
+          onOpenChat && onOpenChat(name);
+        }}
+        initialMode="group"
+      />
     </div>
   );
 }

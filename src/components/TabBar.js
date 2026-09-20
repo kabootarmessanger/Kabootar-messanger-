@@ -2,10 +2,11 @@
 import { useApp } from "@/context/AppContext";
 
 const TABS = [
-  { id: "chats", icon: "💬", label: "Chats" },
+  { id: "contacts", icon: "📇", label: "Contacts" },
   { id: "status", icon: "⭕", label: "Status" },
+  { id: "chats", icon: "💬", label: "Chats" },
   { id: "calls", icon: "📞", label: "Calls" },
-  { id: "settings", icon: "⚙️", label: "Settings" }
+  { id: "profile", icon: "👤", label: "Profile" }
 ];
 
 export default function TabBar({ active, onChange }) {

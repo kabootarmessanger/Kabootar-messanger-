@@ -4,14 +4,14 @@ import Modal from "./Modal";
 import Avatar from "./Avatar";
 import { useApp } from "@/context/AppContext";
 
-export default function NewChatModal({ open, onClose, onOpenChat }) {
+export default function NewChatModal({ open, onClose, onOpenChat, initialMode = "list" }) {
   const { contacts, createGroup, showToast } = useApp();
-  const [mode, setMode] = useState("list"); // list | group
+  const [mode, setMode] = useState(initialMode); // list | group
   const [groupName, setGroupName] = useState("");
   const [selected, setSelected] = useState([]);
 
   const close = () => {
-    setMode("list");
+    setMode(initialMode);
     setGroupName("");
     setSelected([]);
     onClose();
