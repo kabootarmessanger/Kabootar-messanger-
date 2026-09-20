@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword 
@@ -16,6 +17,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  // Already signed in? Don't show the login form, go straight to the app.
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/");
+    }
+  }, [authLoading, user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,8 +39,8 @@ export default function LoginPage() {
         // नया अकाउंट बनाएं
         await createUserWithEmailAndPassword(auth, email, password);
       }
-      // लॉगिन सफल होने पर चैट पेज पर भेजें
-      router.push("/chat"); 
+      // लॉगिन सफल होने पर होम पेज पर भेजें
+      router.push("/"); 
     } catch (err) {
       // एरर को हैंडल करें (जैसे गलत पासवर्ड या ईमेल)
       setError(err.message.replace("Firebase: ", ""));
@@ -112,4 +121,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-                }
+}
