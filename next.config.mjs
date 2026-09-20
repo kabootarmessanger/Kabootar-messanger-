@@ -8,8 +8,8 @@ const nextConfig = {
   reactStrictMode: true,
   output: "export",
   trailingSlash: true,
-  // basePath: "/<repo>",
-  // assetPrefix: "/<repo>/",
+  basePath: "/Kabootar-messanger-",
+  assetPrefix: "/Kabootar-messanger-/",
   images: {
     unoptimized: true, // required for static export; next/image isn't used anyway
     remotePatterns: [
