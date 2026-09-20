@@ -1,0 +1,12 @@
+{
+  "name": "Kabootar",
+  "short_name": "Kabootar",
+  "description": "Fast, private messaging for everyone.",
+  "start_url": "/Kabootar-messanger-/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#C85A32",
+  "icons": [
+    { "src": "/Kabootar-messanger-/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
