@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { findUserByEmail, getOrCreateChat, listenToMyChats } from "@/lib/realChat";
+import { findUserByIdentifier, getOrCreateChat, getUserProfile, listenToMyChats } from "@/lib/realChat";
 import Avatar from "./Avatar";
 import Modal from "./Modal";
 import RealChatRoom from "./RealChatRoom";
@@ -12,15 +12,17 @@ export default function ContactsScreen({ onOpenChat }) {
   const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [findOpen, setFindOpen] = useState(false);
-  const [findEmail, setFindEmail] = useState("");
+  const [findValue, setFindValue] = useState("");
   const [findBusy, setFindBusy] = useState(false);
   const [findError, setFindError] = useState("");
   const [realChats, setRealChats] = useState([]);
   const [activeReal, setActiveReal] = useState(null); // { chatId, otherUser }
+  const [myProfile, setMyProfile] = useState(null);
 
   useEffect(() => {
     if (!user) return;
     const unsub = listenToMyChats(user.uid, setRealChats);
+    getUserProfile(user.uid).then(setMyProfile);
     return unsub;
   }, [user]);
 
@@ -34,19 +36,27 @@ export default function ContactsScreen({ onOpenChat }) {
     setFindError("");
     setFindBusy(true);
     try {
-      const email = findEmail.trim().toLowerCase();
-      if (email === (user.email || "").toLowerCase()) {
-        setFindError("Yeh toh aapki hi email hai 🙂");
+      const value = findValue.trim();
+      const isOwnPhone = myProfile?.phoneNumber && value === myProfile.phoneNumber;
+      const isOwnEmail = value.toLowerCase() === (user.email || "").toLowerCase();
+      if (isOwnPhone || isOwnEmail) {
+        setFindError("Yeh toh aapki hi identity hai 🙂");
         return;
       }
-      const other = await findUserByEmail(email);
+      const other = await findUserByIdentifier(value);
       if (!other) {
-        setFindError("Is email se koi Kabootar account nahi mila");
+        setFindError("Is number/email se koi Kabootar account nahi mila");
         return;
       }
-      const chatId = await getOrCreateChat({ uid: user.uid, email: user.email, name: user.displayName }, other);
+      const me = {
+        uid: user.uid,
+        email: user.email,
+        name: myProfile?.name || user.displayName,
+        phoneNumber: myProfile?.phoneNumber
+      };
+      const chatId = await getOrCreateChat(me, other);
       setFindOpen(false);
-      setFindEmail("");
+      setFindValue("");
       setActiveReal({ chatId, otherUser: other });
     } catch (err) {
       setFindError("Kuch galat ho gaya, dobara try karo");
@@ -76,7 +86,7 @@ export default function ContactsScreen({ onOpenChat }) {
         <button
           onClick={() => setFindOpen(true)}
           className="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xl shrink-0"
-          title="Find a real Kabootar user by email"
+          title="Find a real Kabootar user by phone number"
         >
           🌐
         </button>
@@ -128,13 +138,13 @@ export default function ContactsScreen({ onOpenChat }) {
 
       <Modal open={findOpen} onClose={() => { setFindOpen(false); setFindError(""); }} title="🌐 Find a real Kabootar user">
         <form onSubmit={handleFind} className="flex flex-col gap-3">
-          <p className="text-xs text-app3 -mt-1">Unki signup email daalo — dono ko real-time messages milenge.</p>
+          <p className="text-xs text-app3 -mt-1">Unka mobile number daalo (jis se woh signup kiya tha) — dono ko real-time messages milenge.</p>
           <input
-            type="email"
+            type="text"
             required
-            value={findEmail}
-            onChange={(e) => setFindEmail(e.target.value)}
-            placeholder="unki@email.com"
+            value={findValue}
+            onChange={(e) => setFindValue(e.target.value)}
+            placeholder="+91 98765 43210"
             className="p-3 bg-app2 rounded-xl outline-none text-app"
           />
           {findError && <div className="text-xs text-red-500">{findError}</div>}

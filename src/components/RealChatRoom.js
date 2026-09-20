@@ -38,7 +38,7 @@ export default function RealChatRoom({ chatId, otherUser, onClose }) {
         <Avatar name={otherUser.name} size={38} />
         <div className="flex-1 px-1">
           <div className="font-semibold text-sm leading-tight">{otherUser.name}</div>
-          <div className="text-[11px] text-white/75 leading-tight">{otherUser.email}</div>
+          <div className="text-[11px] text-white/75 leading-tight">{otherUser.phoneNumber || otherUser.email}</div>
         </div>
       </div>
 
