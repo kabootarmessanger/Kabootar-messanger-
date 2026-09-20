@@ -1,23 +1,36 @@
-// src/firebase.js
-import { initializeApp } from "firebase/app";
+// src/lib/firebase.js
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// यहाँ अपना कॉपी किया हुआ firebaseConfig पेस्ट करें
+// Kabootar Firebase project config (these are public client keys — safe to
+// ship in the frontend bundle; access is controlled via Firestore/Storage
+// security rules, not by hiding this object).
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBzah8Uk_kw-yNa3830v_OCtF6_KPZNA8E",
+  authDomain: "kabootar-messanger.firebaseapp.com",
+  projectId: "kabootar-messanger",
+  storageBucket: "kabootar-messanger.firebasestorage.app",
+  messagingSenderId: "584989256409",
+  appId: "1:584989256409:web:15298698cdcac68425ecc8",
+  measurementId: "G-NK64DVWTMG"
 };
 
-// Firebase को इनिशियलाइज़ करें
-const app = initializeApp(firebaseConfig);
+// Avoid re-initializing on hot reload / multiple imports.
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// सर्विसेज को एक्सपोर्ट करें ताकि आप इन्हें कहीं भी यूज़ कर सकें
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Analytics needs a real browser (window, indexedDB) — it will crash during
+// Next.js server-side rendering, so only load it on the client.
+export let analytics = null;
+if (typeof window !== "undefined") {
+  import("firebase/analytics").then(({ getAnalytics, isSupported }) => {
+    isSupported().then((ok) => {
+      if (ok) analytics = getAnalytics(app);
+    });
+  });
+}
