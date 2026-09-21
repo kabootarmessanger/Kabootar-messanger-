@@ -12,6 +12,9 @@
 <link rel="icon" type="image/png" href="icon-512.png">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#F8FAFC;--bg-2:#F1F5F9;--card:#FFFFFF;--text:#0F172A;--text-2:#64748B;--text-3:#94A3B8;--border:#E2E8F0;--border-2:#F1F5F9;--primary:#C85A32;--primary-light:rgba(200,90,50,0.1);--green:#10B981;--red:#EF4444;--blue:#3B82F6;--chat-bg:#F8FAFC;--in-bubble:#FFFFFF;--out-bubble:#C85A32;--out-text:#FFFFFF;--in-text:#0F172A;--fs:15px}
 [data-theme="dark"]{--bg:#0F172A;--bg-2:#1E293B;--card:#1E293B;--text:#F1F5F9;--text-2:#94A3B8;--text-3:#64748B;--border:#334155;--border-2:#1E293B;--chat-bg:#0F172A;--in-bubble:#1E293B;--in-text:#F1F5F9}
@@ -35,6 +38,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;forced-color-adjust:none}
 html,body{height:100%;width:100%;overflow:hidden;overscroll-behavior:none;position:fixed;top:0;left:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.4;font-size:var(--fs)}
+.screen-header h1,.brand-title{font-family:'Poppins',-apple-system,sans-serif;font-weight:700;letter-spacing:-0.02em}
 input,button,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 button{background:none;border:none;cursor:pointer;color:inherit}
 .app{width:100%;height:100dvh;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
@@ -307,15 +311,7 @@ button{background:none;border:none;cursor:pointer;color:inherit}
 
   <!-- CHATS -->
   <div id="tab-chats" class="tab-content active">
-    <div class="screen-header">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <h1 style="margin:0">Chats</h1>
-        <img src="icon-512.png" alt="Kabootar" style="width:22px;height:22px;border-radius:6px;object-fit:cover">
-        <span style="font-size:18px;font-weight:700;color:var(--primary)">Kabootar</span>
-      </div>
-      <button onclick="toggleTheme()" id="theme-btn">🌙</button>
-    </div>
-    <div style="padding:0 16px">
+    <div style="padding:16px 16px 0">
       <div class="search">
         <span class="icon">🔍</span>
         <input type="text" id="chat-search" placeholder="Search chats & messages" oninput="searchAll(this.value)">
@@ -348,11 +344,7 @@ button{background:none;border:none;cursor:pointer;color:inherit}
 
   <!-- CONTACTS -->
   <div id="tab-contacts" class="tab-content">
-    <div class="screen-header">
-      <h1 style="margin:0">Contacts</h1>
-      <button onclick="toggleTheme()">🌙</button>
-    </div>
-    <div style="padding:0 16px">
+    <div style="padding:16px 16px 0">
       <div class="search">
         <span class="icon">🔍</span>
         <input type="text" id="contact-search" placeholder="Search contacts" oninput="renderContacts()">
@@ -1356,4 +1348,269 @@ async function shareLocation() {
 function createPoll() {
   closeAttachments();
   const q = prompt("Poll question:", "Which feature next?"); if (!q) return;
-  const opts = (prompt("Options (comma separated):", "Voice notes, Video calls, Themes") || ""
+  const opts = (prompt("Options (comma separated):", "Voice notes, Video calls, Themes") || "").split(",").map(s => s.trim()).filter(Boolean);
+  if (opts.length < 2) return;
+  addMediaMessage({ poll: { question: q, options: opts.map(t => ({ t, v: 0 })) } });
+}
+function shareContact() {
+  closeAttachments();
+  const c = contacts.find(x => x.reg); if (!c) return;
+  addMediaMessage({ text: `👤 Contact: ${c.name} (${c.sub})` });
+}
+function scheduleMessage() {
+  closeAttachments();
+  const t = prompt("Message to schedule:"); if (!t) return;
+  const m = parseInt(prompt("In X minutes:", "5") || "0"); if (!m) return;
+  showToast(`Scheduled in ${m} min`);
+  setTimeout(() => {
+    if (!messagesDB[currentChatName]) messagesDB[currentChatName] = [];
+    messagesDB[currentChatName].push({ text: t, own: true, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), status: "sent" });
+    if (currentChatName) renderMessages();
+    showToast("Scheduled message sent");
+  }, m * 60000);
+}
+function openMediaViewer(src) { document.getElementById("media-viewer-img").src = src; document.getElementById("media-viewer").classList.add("open"); }
+function closeMediaViewer() { document.getElementById("media-viewer").classList.remove("open"); }
+function openMap(lat, lng) { window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank"); }
+function downloadDoc(url, n) { if (url) { const a = document.createElement("a"); a.href = url; a.download = n; a.click(); } }
+function playVoice(i) { const m = messagesDB[currentChatName][i]; if (!m || !m.voice) return; beep(1200, 50); showToast("Playing"); }
+
+/* ========== VOICE RECORDING ========== */
+async function startVoiceRecording() {
+  document.getElementById("voice-recorder").classList.add("open");
+  recSeconds = 0; document.getElementById("rec-time").textContent = "0:00";
+  document.getElementById("rec-waveform").innerHTML = Array.from({ length: 40 }).map((_, i) => `<span style="height:${20 + Math.random() * 60}%;animation-delay:${i * 0.03}s"></span>`).join("");
+  recTimer = setInterval(() => { recSeconds++; const m = Math.floor(recSeconds / 60); const s = recSeconds % 60; document.getElementById("rec-time").textContent = `${m}:${String(s).padStart(2, "0")}`; }, 1000);
+  vibrate(); beep(500, 100);
+  try { if (navigator.mediaDevices?.getUserMedia) { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); audioChunks = []; mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.start(); } } catch(e) {}
+}
+function sendVoiceNote() {
+  clearInterval(recTimer);
+  document.getElementById("voice-recorder").classList.remove("open");
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.onstop = () => { const b = new Blob(audioChunks, { type: "audio/webm" }); finishVoice(URL.createObjectURL(b)); };
+    mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  } else finishVoice(null);
+}
+function finishVoice(url) {
+  if (!messagesDB[currentChatName]) messagesDB[currentChatName] = [];
+  const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const m = { own: true, time, status: "sending", voice: true, voiceDuration: recSeconds, text: "", audioUrl: url };
+  messagesDB[currentChatName].push(m); renderMessages();
+  document.getElementById("messages").scrollTop = 999999; beep(900, 100);
+  setTimeout(() => { m.status = "delivered"; renderMessages(); }, 700);
+  setTimeout(() => { m.status = "read"; renderMessages(); }, 1800);
+}
+function cancelRecording() {
+  clearInterval(recTimer);
+  if (mediaRecorder && mediaRecorder.state !== "inactive") { try { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); } catch(e) {} }
+  document.getElementById("voice-recorder").classList.remove("open");
+  showToast("Cancelled");
+}
+
+/* ========== EMOJI ========== */
+function toggleEmoji() {
+  const p = document.getElementById("emoji-picker");
+  if (p.classList.contains("open")) { p.classList.remove("open"); return; }
+  document.getElementById("emoji-grid").innerHTML = ALL_EMOJIS.map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join("");
+  p.classList.add("open");
+}
+function insertEmoji(e) { document.getElementById("msg-input").value += e; onTyping(); }
+function hideEmoji() { document.getElementById("emoji-picker").classList.remove("open"); }
+function hideReactions() { document.getElementById("reactions-bar").classList.remove("open"); }
+function react(em) { if (ctxMsgIdx === null) return; quickReact(em); }
+
+/* ========== CHAT INFO ========== */
+function showChatInfo() {
+  openGenericModal(`<h3>${currentChatName}</h3><p style="color:var(--text-2);margin-bottom:12px;">🔒 End-to-end encrypted</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="openPinnedBoard();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">📌 Pinned</button>
+      <button onclick="openStarredMessages();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">⭐ Starred</button>
+      <button onclick="openModal('wallpaperModal');closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">🖼️ Wallpaper</button>
+      <button onclick="showAnalytics();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">📊 Analytics</button>
+      <button onclick="setReminder();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">⏰ Set Reminder</button>
+      <button onclick="lockChat();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">🔒 Lock Chat</button>
+      <button onclick="translateAllMessages();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;">🌐 Translate All</button>
+      <button onclick="clearChat();closeModal()" style="padding:12px;background:var(--bg-2);border-radius:12px;text-align:left;font-size:14px;color:var(--red);">🗑️ Clear Chat</button>
+    </div>`);
+}
+function openChatMenu() {
+  const a = prompt("1: Mute\n2: Clear\n3: Export\n4: Block");
+  if (a === "1") { const c = chats.find(x => x.name === currentChatName); c.muted = !c.muted; showToast(c.muted ? "Muted" : "Unmuted"); }
+  if (a === "2" && confirm("Clear all?")) { messagesDB[currentChatName] = []; renderMessages(); }
+  if (a === "3") exportChat(currentChatName);
+  if (a === "4" && confirm("Block?")) { showToast("Blocked"); closeChat(); }
+}
+function clearChat() { if (confirm("Clear all?")) { messagesDB[currentChatName] = []; renderMessages(); showToast("Cleared"); } }
+function exportChat(name) {
+  const msgs = messagesDB[name] || [];
+  const text = msgs.map(m => `[${m.time}] ${m.own ? "You" : name}: ${m.text || "[Media]"}`).join("\n");
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${name}-chat.txt`; a.click();
+  showToast("Exported");
+}
+function exportAllChats() {
+  let text = "Kabootar Chat Export\n\n";
+  Object.entries(messagesDB).forEach(([n, ms]) => { text += `\n===== ${n} =====\n`; ms.forEach(m => { text += `[${m.time}] ${m.own ? "You" : n}: ${m.text || "[Media]"}\n`; }); });
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "kabootar-all.txt"; a.click();
+  showToast("Exported");
+}
+function backupChats() {
+  const data = JSON.stringify({ chats, messagesDB, contacts, stories, userProfile });
+  const blob = new Blob([data], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "kabootar-backup.json"; a.click();
+  showToast("Backup downloaded");
+}
+
+/* ========== MODALS ========== */
+function openGenericModal(html) { document.getElementById("genericModalContent").innerHTML = html; document.getElementById("genericModal").classList.add("open"); }
+function closeModal(e) { if (e) e.stopPropagation(); document.getElementById("genericModal").classList.remove("open"); }
+function openModal(type) {
+  let html = "";
+  if (type === "wallpaperModal") {
+    const walls = [["default", "Default", "#F8FAFC"], ["terracotta", "Terracotta", "#F9E1D8"], ["paper", "Paper", "#FAF7F0"], ["dark", "Dark", "#0F172A"], ["forest", "Forest", "#C8E6C9"], ["ocean", "Ocean", "#BAE6FD"], ["sunset", "Sunset", "#FCA5A5"]];
+    html = `<h3>Chat Wallpaper</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${walls.map(([id, l, c]) => `<div onclick="setWallpaper('${id}')" style="height:80px;border-radius:14px;background:${c};border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:600;color:${id === 'dark' ? '#FFF' : '#0F172A'};cursor:pointer">${l}</div>`).join("")}</div>`;
+  } else if (type === "fontSizeModal") {
+    html = `<h3>Font Size</h3><div style="display:flex;flex-direction:column;gap:8px">${[["small", "Small", "13px"], ["medium", "Medium", "15px"], ["large", "Large", "17px"], ["xl", "Extra Large", "19px"]].map(([id, l, sz]) => `<div onclick="setFontSize('${id}')" style="padding:14px;background:var(--bg-2);border-radius:12px;font-size:${sz};cursor:pointer">${l}</div>`).join("")}</div>`;
+  }
+  openGenericModal(html);
+}
+
+/* ========== QR ========== */
+function generateQR(text) {
+  const size = 220, cells = 25, cs = size / cells;
+  let seed = 0;
+  for (let i = 0; i < text.length; i++) seed = ((seed << 5) - seed + text.charCodeAt(i)) | 0;
+  seed = Math.abs(seed);
+  const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  let rects = "";
+  for (let y = 0; y < cells; y++) for (let x = 0; x < cells; x++) {
+    const corner = (x < 8 && y < 8) || (x >= cells - 8 && y < 8) || (x < 8 && y >= cells - 8);
+    const edge = (x === 0 || x === 7 || y === 0 || y === 7) && ((x < 8) || (x >= cells - 8)) && ((y < 8) || (y >= cells - 8));
+    const center = (x >= 2 && x <= 5 && y >= 2 && y <= 5) || (x >= cells - 6 && x <= cells - 3 && y >= 2 && y <= 5) || (x >= 2 && x <= 5 && y >= cells - 6 && y <= cells - 3);
+    const on = corner ? (edge || center) : rand() > 0.5;
+    if (on) rects += `<rect x="${x * cs}" y="${y * cs}" width="${cs}" height="${cs}" fill="#0F172A"/>`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${rects}</svg>`;
+}
+function showQRModal() { openGenericModal(`<h3>Kabootar QR</h3><div style="text-align:center;padding:12px">${generateQR("kabootar://u/kb_aarav_01")}<p style="margin-top:12px;font-weight:700">${userProfile.name}</p><p style="color:var(--primary);font-size:13px">@kb_aarav_01</p></div>`); }
+function editProfile() {
+  const n = prompt("Name:", userProfile.name); if (!n) return;
+  const b = prompt("Bio:", userProfile.bio);
+  userProfile.name = n; userProfile.bio = b || userProfile.bio;
+  document.querySelector(".profile-card h2").textContent = userProfile.name;
+  document.querySelector(".profile-card p").textContent = userProfile.bio;
+  showToast("Updated"); saveState();
+}
+
+/* ========== NOTIFICATIONS ========== */
+function requestNotificationPermission() {
+  if (!("Notification" in window)) { showToast("Not supported"); return; }
+  Notification.requestPermission().then(p => showToast(p === "granted" ? "Enabled" : "Denied"));
+}
+
+/* ========== STORAGE ========== */
+function showStorageInfo() {
+  if (navigator.storage?.estimate) navigator.storage.estimate().then(est => { const t = (est.usage / 1024 / 1024).toFixed(2); document.getElementById("storage-value").textContent = t + " MB"; showToast(`Storage: ${t} MB`); });
+  else { document.getElementById("storage-value").textContent = "< 1 MB"; showToast("Not available"); }
+}
+function clearAppCache() {
+  if (!confirm("Clear all data?")) return;
+  localStorage.clear(); sessionStorage.clear();
+  showToast("Cleared"); setTimeout(() => location.reload(), 1000);
+}
+function shareApp() {
+  const url = window.location.href;
+  if (navigator.share) navigator.share({ title: "Kabootar", text: "Try Kabootar!", url });
+  else navigator.clipboard?.writeText(url).then(() => showToast("Copied"));
+}
+
+/* ========== CALLS ========== */
+async function startCall(type, name) {
+  name = name || currentChatName || "Priya Patel";
+  callMuted = false; callVideoOn = type === "video"; callSeconds = 0;
+  document.getElementById("call-name").textContent = name;
+  document.getElementById("call-status").textContent = "Calling...";
+  document.getElementById("call-avatar").style.display = "block";
+  document.getElementById("call-screen").classList.add("open");
+  beep(600, 200); vibrate([100, 50, 100]);
+  if (type === "video") {
+    try { localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const lv = document.getElementById("call-local-video"); lv.srcObject = localStream; lv.style.display = "block";
+      document.getElementById("call-avatar").style.display = "none";
+      document.getElementById("btn-video").classList.add("active");
+    } catch(e) { showToast("Camera N/A"); }
+  } else { try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch(e) {} }
+  setTimeout(() => {
+    document.getElementById("call-status").textContent = "Connected";
+    callTimer = setInterval(() => { callSeconds++; const m = Math.floor(callSeconds / 60); const s = callSeconds % 60; document.getElementById("call-status").textContent = `${m}:${String(s).padStart(2, "0")}`; }, 1000);
+  }, 2000);
+}
+function endCall() { clearInterval(callTimer); if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; } document.getElementById("call-local-video").style.display = "none"; document.getElementById("call-screen").classList.remove("open"); showToast("Call ended"); }
+function toggleCallMute() { callMuted = !callMuted; document.getElementById("btn-mute").classList.toggle("active", callMuted); if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !callMuted); showToast(callMuted ? "Muted" : "Unmuted"); }
+function toggleCallVideo() {
+  callVideoOn = !callVideoOn;
+  document.getElementById("btn-video").classList.toggle("active", !callVideoOn);
+  if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = callVideoOn);
+  document.getElementById("call-local-video").style.display = callVideoOn ? "block" : "none";
+  document.getElementById("call-avatar").style.display = callVideoOn ? "none" : "block";
+  showToast(callVideoOn ? "Camera on" : "Camera off");
+}
+function toggleSpeaker() { showToast("Speaker toggled"); }
+function flipCamera() { showToast("Flipped"); }
+async function shareScreen() { try { const s = await navigator.mediaDevices.getDisplayMedia({ video: true }); document.getElementById("call-remote-video").srcObject = s; document.getElementById("call-remote-video").style.display = "block"; showToast("Sharing"); } catch(e) { showToast("Cancelled"); } }
+
+/* ========== NEW CHAT ========== */
+function openNewChat() {
+  openGenericModal(`<h3>New Chat</h3><div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto">${contacts.filter(c => c.reg).map(c => `<div onclick="closeModal();openChat('${escapeQuotes(c.name)}')" style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-2);border-radius:12px;cursor:pointer"><div class="avatar sm"><img src="${c.avatar}"></div><div><div style="font-weight:600">${c.name}</div><div style="font-size:12px;color:var(--text-3)">${c.sub}</div></div></div>`).join("")}</div>`);
+}
+
+/* ========== TABS ========== */
+function switchTab(name, el) {
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  const target = document.getElementById("tab-" + name); if (target) target.classList.add("active");
+  document.querySelectorAll(".tabs .tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+}
+
+/* ========== UTILS ========== */
+function escapeQuotes(s) { return s.replace(/'/g, "\\'"); }
+function showToast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => t.classList.remove("show"), 1800); }
+function checkSystemTheme() { if (localStorage.getItem("kabootar_theme_set") === "manual") return; const d = window.matchMedia("(prefers-color-scheme: dark)").matches; document.getElementById("app").dataset.theme = d ? "dark" : "light"; }
+
+/* ========== INIT ========== */
+loadState();
+renderChats();
+renderContacts();
+renderCalls();
+renderStories();
+renderFolderBar();
+if (document.getElementById("starred-count")) document.getElementById("starred-count").textContent = starredMessages.length;
+if (document.getElementById("ghost-label")) document.getElementById("ghost-label").textContent = ghostMode ? "On" : "Off";
+if (document.getElementById("receipt-label")) document.getElementById("receipt-label").textContent = sendReadReceipts ? "On" : "Off";
+setTimeout(() => {
+  if (appPin) lockApp();
+  checkSystemTheme();
+  document.getElementById("panic-btn").classList.add("show");
+}, 500);
+
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => { const n = Date.now(); if (n - lastTouchEnd <= 300) e.preventDefault(); lastTouchEnd = n; }, { passive: false });
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("story-viewer").classList.contains("open")) return;
+  if (e.key === "ArrowRight") nextStory();
+  if (e.key === "ArrowLeft") prevStory();
+  if (e.key === "Escape") closeStory();
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+
+</body>
+  </html>
+        
