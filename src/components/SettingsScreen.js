@@ -87,7 +87,7 @@ export default function SettingsScreen({ onOpenChat }) {
   };
 
   const handleLogout = async () => {
-    if (!window.confirm("Log out of Kabootar?")) return;
+    if (!window.confirm("⚠️ Log out karne ke baad is number se dobara sign up karna padega, aur purani real chats/groups wapas nahi milenge (ye device hi aapki identity hai). Aage badhein?")) return;
     try {
       await signOut(auth);
       router.replace("/login");
