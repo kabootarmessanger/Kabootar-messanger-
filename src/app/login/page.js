@@ -5,94 +5,124 @@ import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { ensureUserDoc, normalizePhone } from "@/lib/realChat";
-import {
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink
-} from "firebase/auth";
+import { signInAnonymously, updateProfile } from "firebase/auth";
+import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-// LocalStorage keys used to remember the pending login across the redirect
-// to Gmail and back (Firebase's email-link flow needs the email again when
-// the link is opened, and we need the phone number to attach to the account).
-const LS_EMAIL = "kabootar_pending_email";
-const LS_PHONE = "kabootar_pending_phone";
-const LS_NAME = "kabootar_pending_name";
+// ── EmailJS setup (free, no backend needed) ──────────────────────────────
+// 1. Sign up free at https://www.emailjs.com
+// 2. Email Services → Add New Service → connect your Gmail → copy the
+//    "Service ID"
+// 3. Email Templates → Create New Template. Body must include these
+//    variables so the OTP actually shows up in the email:
+//      To: {{to_email}}
+//      Subject: Your Kabootar login code
+//      Body: Hi {{to_name}}, your Kabootar code is {{otp_code}}. It expires
+//            in 10 minutes.
+//    Copy the "Template ID".
+// 4. Account → General → copy your "Public Key".
+// 5. Account → Security → Allowed origins → add your GitHub Pages domain
+//    (e.g. kabootarmessanger.github.io) so the request isn't blocked.
+// 6. Paste all three below.
+const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+
+function genOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function sendOtpEmail(toEmail, toName, code) {
+  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: EMAILJS_TEMPLATE_ID,
+      user_id: EMAILJS_PUBLIC_KEY,
+      template_params: { to_email: toEmail, to_name: toName, otp_code: code }
+    })
+  });
+  if (!res.ok) throw new Error("Email bhejne mein problem hui");
+}
 
 export default function LoginPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState("form"); // form | sent | completing | needEmail
+  const [step, setStep] = useState("form"); // form | otp
 
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  // Already signed in? Don't show the login form, go straight to the app.
+  // Already signed in (this device already completed OTP before)? Skip
+  // straight into the app — this is what makes returning to the SAME
+  // device feel instant, no OTP needed again.
   useEffect(() => {
     if (!authLoading && user) {
       router.replace("/");
     }
   }, [authLoading, user, router]);
 
-  // Handle the return trip: the user clicked the link in their Gmail inbox
-  // and landed back on this page — finish signing them in automatically.
-  useEffect(() => {
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
-
-    const savedEmail = window.localStorage.getItem(LS_EMAIL);
-    if (!savedEmail) {
-      // Link opened in a different browser/device than it was requested from.
-      setStep("needEmail");
-      return;
-    }
-    completeSignIn(savedEmail);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const completeSignIn = async (emailToUse) => {
-    setStep("completing");
-    setError("");
-    try {
-      const cred = await signInWithEmailLink(auth, emailToUse, window.location.href);
-      const savedPhone = window.localStorage.getItem(LS_PHONE) || "";
-      const savedName = window.localStorage.getItem(LS_NAME) || "";
-      await ensureUserDoc(cred.user, { phoneNumber: savedPhone, name: savedName });
-      window.localStorage.removeItem(LS_EMAIL);
-      window.localStorage.removeItem(LS_PHONE);
-      window.localStorage.removeItem(LS_NAME);
-      router.push("/");
-    } catch (err) {
-      setError(err.message.replace("Firebase: ", ""));
-      setStep("form");
-    }
-  };
-
-  const handleSend = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const fullPhone = normalizePhone(phone);
-      await sendSignInLinkToEmail(auth, email.trim(), {
-        url: window.location.href,
-        handleCodeInApp: true
+      // Anonymous session first — this is what makes this device "this
+      // account" going forward, and lets us securely store the OTP under
+      // this uid (Firestore rules only let a uid touch its own OTP doc).
+      const cred = await signInAnonymously(auth);
+      const code = genOtp();
+      await setDoc(doc(db, "otp_requests", cred.user.uid), {
+        code,
+        name: name.trim(),
+        phoneNumber: normalizePhone(phone),
+        email: email.trim().toLowerCase(),
+        expiresAt: Date.now() + 10 * 60 * 1000
       });
-      window.localStorage.setItem(LS_EMAIL, email.trim());
-      window.localStorage.setItem(LS_PHONE, fullPhone);
-      window.localStorage.setItem(LS_NAME, name.trim());
-      setStep("sent");
+      await sendOtpEmail(email.trim(), name.trim(), code);
+      setStep("otp");
     } catch (err) {
-      setError(err.message.replace("Firebase: ", ""));
+      setError(err.message || "Kuch galat ho gaya, dobara try karo");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleConfirmEmail = async (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    completeSignIn(email.trim());
+    setError("");
+    setLoading(true);
+    try {
+      const uid = auth.currentUser?.uid;
+      const snap = await getDoc(doc(db, "otp_requests", uid));
+      if (!snap.exists()) {
+        setError("Session expire ho gaya, dobara number/email daalo");
+        setStep("form");
+        return;
+      }
+      const data = snap.data();
+      if (Date.now() > data.expiresAt) {
+        setError("OTP expire ho gaya, naya bhejo");
+        return;
+      }
+      if (data.code !== otp.trim()) {
+        setError("Galat OTP, dobara check karo");
+        return;
+      }
+      await updateProfile(auth.currentUser, { displayName: data.name });
+      await ensureUserDoc(auth.currentUser, { phoneNumber: data.phoneNumber, name: data.name });
+      await deleteDoc(doc(db, "otp_requests", uid));
+      router.push("/");
+    } catch (err) {
+      setError("Kuch galat ho gaya, dobara try karo");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -101,119 +131,73 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[#C85A32]">🕊️ Kabootar</h1>
           <p className="text-gray-500 mt-2">
-            {step === "sent"
-              ? "Apni Gmail check karo"
-              : step === "completing"
-              ? "Sign in ho raha hai…"
-              : step === "needEmail"
-              ? "Apni email confirm karo"
-              : "Mobile number se sign in karo"}
+            {step === "otp" ? "Gmail mein aaya code daalo" : "Mobile number se sign in karo"}
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-lg mb-4 text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        {step === "completing" && (
-          <div className="text-center text-4xl py-8 animate-pulse">🕊️</div>
-        )}
-
-        {step === "sent" && (
-          <div className="text-center space-y-4">
-            <div className="text-5xl">📧</div>
-            <p className="text-sm text-gray-600">
-              <strong>{email}</strong> pe login link bhej diya hai. Apni Gmail kholo aur link pe
-              tap karo — is number se automatically sign in ho jaoge, koi OTP type nahi karna
-              padega.
-            </p>
-            <p className="text-xs text-gray-400">
-              (SMS OTP ki jagah Gmail link use hoti hai — isse koi cost nahi lagti.)
-            </p>
-            <button
-              onClick={() => setStep("form")}
-              className="text-[#C85A32] text-sm font-semibold hover:underline"
-            >
-              Number ya email badalna hai?
-            </button>
-          </div>
-        )}
-
-        {step === "needEmail" && (
-          <form onSubmit={handleConfirmEmail} className="space-y-5">
-            <p className="text-sm text-gray-600 text-center">
-              Ye link kisi aur browser/device pe khula hai. Confirm karne ke liye wahi email daalo
-              jispe link bheji gayi thi.
-            </p>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
-              placeholder="you@gmail.com"
-            />
-            <button
-              type="submit"
-              className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all"
-            >
-              Confirm aur Sign In karo
-            </button>
-          </form>
+          <div className="bg-red-50 text-red-500 p-3 rounded-lg mb-4 text-sm text-center">{error}</div>
         )}
 
         {step === "form" && (
-          <form onSubmit={handleSend} className="space-y-5">
+          <form onSubmit={handleSendOtp} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Naam</label>
               <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                type="text" value={name} onChange={(e) => setName(e.target.value)} required
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
                 placeholder="Aapka naam"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mobile Number (aapki identity)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number (aapki identity)</label>
               <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
+                type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
                 placeholder="+91 98765 43210"
               />
-              <p className="text-xs text-gray-400 mt-1">
-                Dusre log isi number se aapko dhoondh kar message karenge.
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Dusre log isi number se aapko dhoondh kar message karenge.</p>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gmail / Email</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
                 placeholder="you@gmail.com"
               />
-              <p className="text-xs text-gray-400 mt-1">Login link isi Gmail pe aayega.</p>
+              <p className="text-xs text-gray-400 mt-1">6-digit code isi Gmail pe aayega.</p>
             </div>
-
             <button
-              type="submit"
-              disabled={loading}
+              type="submit" disabled={loading}
               className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-70"
             >
-              {loading ? "Bhej rahe hain…" : "Login Link Bhejo"}
+              {loading ? "Bhej rahe hain…" : "OTP Bhejo"}
+            </button>
+          </form>
+        )}
+
+        {step === "otp" && (
+          <form onSubmit={handleVerifyOtp} className="space-y-5">
+            <p className="text-sm text-gray-600 text-center">
+              <strong>{email}</strong> pe 6-digit code bheja hai
+            </p>
+            <input
+              type="text" inputMode="numeric" maxLength={6} required
+              value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all text-center text-2xl tracking-[0.5em]"
+              placeholder="000000"
+            />
+            <button
+              type="submit" disabled={loading || otp.length !== 6}
+              className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-70"
+            >
+              {loading ? "Check kar rahe hain…" : "Verify aur Login"}
+            </button>
+            <button
+              type="button" onClick={() => setStep("form")}
+              className="w-full text-[#C85A32] text-sm font-semibold"
+            >
+              Number ya email badalna hai?
             </button>
           </form>
         )}
