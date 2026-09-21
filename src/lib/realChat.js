@@ -1,8 +1,9 @@
-import { db } from "./firebase";
+import { db, storage } from "./firebase";
 import {
   doc, setDoc, getDoc, collection, query, where, getDocs,
   addDoc, onSnapshot, orderBy, serverTimestamp, limit
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Turns whatever format a phone number was typed/read in (spaces, dashes,
 // brackets, a leading 0, no country code…) into one consistent E.164-ish
@@ -119,6 +120,35 @@ export function listenToMyChats(uid, callback) {
   });
 }
 
+// Create a group chat (3+ people). `members` is an array of the OTHER
+// participants' user docs (as returned by findUserByPhone/etc — each with
+// uid/name/phoneNumber/email); the creator (me) is added automatically.
+export async function createGroupChat(name, members, me) {
+  const participantInfo = {
+    [me.uid]: { name: me.name || "Kabootar user", phoneNumber: me.phoneNumber || "", email: me.email || "" }
+  };
+  members.forEach((m) => {
+    participantInfo[m.uid] = { name: m.name || "Kabootar user", phoneNumber: m.phoneNumber || "", email: m.email || "" };
+  });
+  const ref = await addDoc(collection(db, "chats"), {
+    isGroup: true,
+    name: name.trim(),
+    participants: [me.uid, ...members.map((m) => m.uid)],
+    participantInfo,
+    createdBy: me.uid,
+    createdAt: serverTimestamp(),
+    lastMessage: "",
+    lastMessageAt: serverTimestamp()
+  });
+  return {
+    id: ref.id,
+    isGroup: true,
+    name: name.trim(),
+    participants: [me.uid, ...members.map((m) => m.uid)],
+    participantInfo
+  };
+}
+
 // Real-time message stream for one chat, oldest first.
 export function listenToMessages(chatId, callback) {
   const q = query(collection(db, "chats", chatId, "messages"), orderBy("createdAt", "asc"));
@@ -138,6 +168,24 @@ export async function sendRealMessage(chatId, senderUid, text) {
   await setDoc(
     doc(db, "chats", chatId),
     { lastMessage: trimmed, lastMessageAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+// Uploads an image to Firebase Storage and posts it as a message in the chat.
+export async function sendRealImage(chatId, senderUid, file) {
+  const path = `chats/${chatId}/${Date.now()}_${file.name}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  await addDoc(collection(db, "chats", chatId, "messages"), {
+    senderId: senderUid,
+    imageUrl: url,
+    createdAt: serverTimestamp()
+  });
+  await setDoc(
+    doc(db, "chats", chatId),
+    { lastMessage: "📷 Photo", lastMessageAt: serverTimestamp() },
     { merge: true }
   );
 }
