@@ -9,6 +9,12 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // Signup OTP: only the device that requested it (same anonymous uid)
+    // can read or delete it — nobody else can see someone else's code.
+    match /otp_requests/{uid} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Sirf chat ke dono participants hi us chat ko padh/likh sakte hain.
     match /chats/{chatId} {
       allow read, update: if request.auth != null
@@ -19,6 +25,23 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read, create: if request.auth != null
                              && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+
+    // WebRTC call signaling: only the caller/callee can read or update a
+    // call, and only the caller can create it. ICE candidates are short-
+    // lived signaling data — any signed-in user may read/write them.
+    match /calls/{callId} {
+      allow read, update: if request.auth != null
+                           && request.auth.uid in [resource.data.callerId, resource.data.calleeId];
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.callerId;
+
+      match /offerCandidates/{candidateId} {
+        allow read, write: if request.auth != null;
+      }
+      match /answerCandidates/{candidateId} {
+        allow read, write: if request.auth != null;
       }
     }
   }
