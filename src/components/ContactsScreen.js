@@ -2,7 +2,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { findUserByIdentifier, findUsersByPhones, getOrCreateChat, getUserProfile, listenToMyChats } from "@/lib/realChat";
+import {
+  findUserByIdentifier, findUsersByPhones, getOrCreateChat, getUserProfile,
+  listenToMyChats, createGroupChat
+} from "@/lib/realChat";
 import Avatar from "./Avatar";
 import Modal from "./Modal";
 import RealChatRoom from "./RealChatRoom";
@@ -16,11 +19,18 @@ export default function ContactsScreen({ onOpenChat }) {
   const [findBusy, setFindBusy] = useState(false);
   const [findError, setFindError] = useState("");
   const [realChats, setRealChats] = useState([]);
-  const [activeReal, setActiveReal] = useState(null); // { chatId, otherUser }
+  const [activeReal, setActiveReal] = useState(null); // full chats/{id} doc
   const [myProfile, setMyProfile] = useState(null);
   const [syncSupported, setSyncSupported] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(null); // { matched: [...], total: n } | null
+
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupPicked, setGroupPicked] = useState([]); // array of user docs
+  const [groupPhoneInput, setGroupPhoneInput] = useState("");
+  const [groupBusy, setGroupBusy] = useState(false);
+  const [groupError, setGroupError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -37,6 +47,19 @@ export default function ContactsScreen({ onOpenChat }) {
     () => contacts.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
     [contacts, query]
   );
+
+  // People from your existing 1:1 real chats — the easiest pool to build a
+  // group from, so you don't have to re-search everyone by phone again.
+  const knownRealPeople = useMemo(() => {
+    const seen = new Map();
+    realChats.forEach((c) => {
+      if (c.isGroup) return;
+      const otherUid = c.participants.find((p) => p !== user?.uid);
+      const info = c.participantInfo?.[otherUid];
+      if (otherUid && info && !seen.has(otherUid)) seen.set(otherUid, { uid: otherUid, ...info });
+    });
+    return [...seen.values()];
+  }, [realChats, user]);
 
   const me = () => ({
     uid: user.uid,
@@ -68,7 +91,12 @@ export default function ContactsScreen({ onOpenChat }) {
 
   const openMatchedContact = async (other) => {
     const chatId = await getOrCreateChat(me(), other);
-    setActiveReal({ chatId, otherUser: other });
+    setActiveReal({
+      id: chatId,
+      isGroup: false,
+      participants: [user.uid, other.uid],
+      participantInfo: { [user.uid]: me(), [other.uid]: other }
+    });
   };
 
   const handleFind = async (e) => {
@@ -88,10 +116,9 @@ export default function ContactsScreen({ onOpenChat }) {
         setFindError("Is number/email se koi Kabootar account nahi mila");
         return;
       }
-      const chatId = await getOrCreateChat(me(), other);
+      await openMatchedContact(other);
       setFindOpen(false);
       setFindValue("");
-      setActiveReal({ chatId, otherUser: other });
     } catch (err) {
       setFindError("Kuch galat ho gaya, dobara try karo");
     } finally {
@@ -99,10 +126,45 @@ export default function ContactsScreen({ onOpenChat }) {
     }
   };
 
-  const openRealChat = (chat) => {
-    const otherUid = chat.participants.find((p) => p !== user.uid);
-    const otherUser = chat.participantInfo?.[otherUid] || { name: "Kabootar user" };
-    setActiveReal({ chatId: chat.id, otherUser });
+  const openRealChat = (chat) => setActiveReal(chat);
+
+  // --- Group creation ---
+  const toggleGroupPick = (person) => {
+    setGroupPicked((p) => (p.some((x) => x.uid === person.uid) ? p.filter((x) => x.uid !== person.uid) : [...p, person]));
+  };
+  const addGroupMemberByPhone = async () => {
+    setGroupError("");
+    const value = groupPhoneInput.trim();
+    if (!value) return;
+    const found = await findUserByIdentifier(value);
+    if (!found) {
+      setGroupError("Ye number Kabootar pe nahi mila");
+      return;
+    }
+    if (found.uid === user.uid) {
+      setGroupError("Yeh aapki hi identity hai");
+      return;
+    }
+    toggleGroupPick(found);
+    setGroupPhoneInput("");
+  };
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    setGroupError("");
+    if (!groupName.trim()) { setGroupError("Group ka naam daalo"); return; }
+    if (groupPicked.length < 2) { setGroupError("Kam se kam 2 members chuno (group ke liye 3+ log chahiye)"); return; }
+    setGroupBusy(true);
+    try {
+      const chat = await createGroupChat(groupName, groupPicked, me());
+      setGroupOpen(false);
+      setGroupName("");
+      setGroupPicked([]);
+      setActiveReal(chat);
+    } catch {
+      setGroupError("Group nahi ban paaya, dobara try karo");
+    } finally {
+      setGroupBusy(false);
+    }
   };
 
   return (
@@ -117,6 +179,13 @@ export default function ContactsScreen({ onOpenChat }) {
             className="flex-1 bg-transparent outline-none text-white placeholder-white/70 text-sm"
           />
         </div>
+        <button
+          onClick={() => setGroupOpen(true)}
+          className="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xl shrink-0"
+          title="Create a real group"
+        >
+          👥
+        </button>
         <button
           onClick={handleSyncContacts}
           disabled={syncing}
@@ -162,14 +231,24 @@ export default function ContactsScreen({ onOpenChat }) {
           <>
             <div className="px-4 pt-4 pb-2 text-xs font-semibold text-primary">Real Kabootar Chats</div>
             {realChats.map((c) => {
-              const otherUid = c.participants.find((p) => p !== user.uid);
-              const other = c.participantInfo?.[otherUid] || { name: "Kabootar user" };
+              let title, sub;
+              if (c.isGroup) {
+                title = c.name;
+                sub = c.lastMessage || `${c.participants.length} members`;
+              } else {
+                const otherUid = c.participants.find((p) => p !== user.uid);
+                const other = c.participantInfo?.[otherUid] || { name: "Kabootar user" };
+                title = other.name;
+                sub = c.lastMessage || "Say hi 👋";
+              }
               return (
                 <div key={c.id} onClick={() => openRealChat(c)} className="flex items-center gap-3.5 px-4 py-3 border-b border-app cursor-pointer">
-                  <Avatar name={other.name} size={48} />
-                  <div className="flex-1">
-                    <div className="font-medium text-sm text-app">{other.name}</div>
-                    <div className="text-xs text-app3 mt-0.5 truncate">{c.lastMessage || "Say hi 👋"}</div>
+                  <Avatar name={title} size={48} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-app flex items-center gap-1">
+                      {c.isGroup && <span>👥</span>} {title}
+                    </div>
+                    <div className="text-xs text-app3 mt-0.5 truncate">{sub}</div>
                   </div>
                 </div>
               );
@@ -219,8 +298,69 @@ export default function ContactsScreen({ onOpenChat }) {
         </form>
       </Modal>
 
+      <Modal open={groupOpen} onClose={() => { setGroupOpen(false); setGroupError(""); }} title="👥 Naya real group">
+        <form onSubmit={handleCreateGroup} className="flex flex-col gap-3">
+          <input
+            type="text"
+            required
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="Group ka naam"
+            className="p-3 bg-app2 rounded-xl outline-none text-app"
+          />
+
+          {knownRealPeople.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-primary mb-1.5">Apni real chats se chuno</div>
+              <div className="max-h-40 overflow-y-auto flex flex-col gap-1">
+                {knownRealPeople.map((p) => {
+                  const picked = groupPicked.some((x) => x.uid === p.uid);
+                  return (
+                    <div
+                      key={p.uid}
+                      onClick={() => toggleGroupPick(p)}
+                      className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer ${picked ? "bg-primary/10" : ""}`}
+                    >
+                      <Avatar name={p.name} size={32} />
+                      <div className="flex-1 text-sm text-app">{p.name}</div>
+                      {picked && <span className="text-primary">✓</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-xs font-semibold text-primary mb-1.5">Ya phone number se add karo</div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={groupPhoneInput}
+                onChange={(e) => setGroupPhoneInput(e.target.value)}
+                placeholder="+91 98765 43210"
+                className="flex-1 p-3 bg-app2 rounded-xl outline-none text-app text-sm"
+              />
+              <button type="button" onClick={addGroupMemberByPhone} className="px-4 bg-app2 rounded-xl text-sm font-semibold text-app">
+                Add
+              </button>
+            </div>
+          </div>
+
+          {groupPicked.length > 0 && (
+            <div className="text-xs text-app3">Members: {groupPicked.map((p) => p.name).join(", ")}</div>
+          )}
+
+          {groupError && <div className="text-xs text-red-500">{groupError}</div>}
+
+          <button type="submit" disabled={groupBusy} className="py-3 bg-primary text-white rounded-xl font-semibold disabled:opacity-60">
+            {groupBusy ? "Ban raha hai…" : "Group banao"}
+          </button>
+        </form>
+      </Modal>
+
       {activeReal && (
-        <RealChatRoom chatId={activeReal.chatId} otherUser={activeReal.otherUser} onClose={() => setActiveReal(null)} />
+        <RealChatRoom chat={activeReal} onClose={() => setActiveReal(null)} />
       )}
     </div>
   );
