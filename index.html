@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-title" content="Kabootar">
 <title>🕊️ Kabootar Messenger</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
 :root{--bg:#F8FAFC;--bg-2:#F1F5F9;--card:#FFFFFF;--text:#0F172A;--text-2:#64748B;--text-3:#94A3B8;--border:#E2E8F0;--border-2:#F1F5F9;--primary:#C85A32;--primary-light:rgba(200,90,50,0.1);--green:#10B981;--red:#EF4444;--blue:#3B82F6;--chat-bg:#F8FAFC;--in-bubble:#FFFFFF;--out-bubble:#C85A32;--out-text:#FFFFFF;--in-text:#0F172A;--fs:15px}
 [data-theme="dark"]{--bg:#0F172A;--bg-2:#1E293B;--card:#1E293B;--text:#F1F5F9;--text-2:#94A3B8;--text-3:#64748B;--border:#334155;--border-2:#1E293B;--chat-bg:#0F172A;--in-bubble:#1E293B;--in-text:#F1F5F9}
@@ -1609,6 +1611,12 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") prevStory();
   if (e.key === "Escape") closeStory();
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
 </script>
 
 </body>
