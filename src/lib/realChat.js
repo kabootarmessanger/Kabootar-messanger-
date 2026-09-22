@@ -1,7 +1,7 @@
 import { db, storage } from "./firebase";
 import {
   doc, setDoc, getDoc, collection, query, where, getDocs,
-  addDoc, onSnapshot, orderBy, serverTimestamp, limit
+  addDoc, onSnapshot, orderBy, serverTimestamp, limit, updateDoc
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -188,4 +188,76 @@ export async function sendRealImage(chatId, senderUid, file) {
     { lastMessage: "📷 Photo", lastMessageAt: serverTimestamp() },
     { merge: true }
   );
+}
+
+// Uploads a recorded voice note and posts it as a message.
+export async function sendRealVoice(chatId, senderUid, blob, durationSec) {
+  const path = `chats/${chatId}/voice_${Date.now()}.webm`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, blob);
+  const url = await getDownloadURL(storageRef);
+  await addDoc(collection(db, "chats", chatId, "messages"), {
+    senderId: senderUid,
+    audioUrl: url,
+    voiceDuration: durationSec || 0,
+    createdAt: serverTimestamp()
+  });
+  await setDoc(
+    doc(db, "chats", chatId),
+    { lastMessage: "🎤 Voice message", lastMessageAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+// Uploads any file (PDF, doc, zip…) and posts it as a document message.
+export async function sendRealDocument(chatId, senderUid, file) {
+  const path = `chats/${chatId}/doc_${Date.now()}_${file.name}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  await addDoc(collection(db, "chats", chatId, "messages"), {
+    senderId: senderUid,
+    documentUrl: url,
+    documentName: file.name,
+    documentSize: (file.size / 1024).toFixed(1) + " KB",
+    createdAt: serverTimestamp()
+  });
+  await setDoc(
+    doc(db, "chats", chatId),
+    { lastMessage: "📄 " + file.name, lastMessageAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+// --- Typing indicator ---
+// Stored directly on the chat doc as a map of uid -> timestamp (ms) so
+// clearing it is just setting that one field back to null; no extra reads.
+export async function setTyping(chatId, uid, isTyping) {
+  try {
+    await updateDoc(doc(db, "chats", chatId), { [`typing.${uid}`]: isTyping ? Date.now() : null });
+  } catch {
+    // Chat doc might not exist yet in rare races — not worth surfacing.
+  }
+}
+
+export function listenToChatDoc(chatId, callback) {
+  return onSnapshot(doc(db, "chats", chatId), (snap) => callback(snap.exists() ? { id: snap.id, ...snap.data() } : null));
+}
+
+// --- Presence (online / last seen) ---
+// Firestore has no built-in "disconnected" detection (that's a Realtime
+// Database feature), so this is an approximate heartbeat: the app writes
+// online:true every ~25s while open, and online:false on the way out. A
+// stale heartbeat (no update for ~60s) is treated as offline by the reader.
+export async function setOnlineStatus(uid, online) {
+  if (!uid) return;
+  try {
+    await setDoc(doc(db, "users", uid), { online, lastSeen: serverTimestamp() }, { merge: true });
+  } catch {
+    // best-effort
+  }
+}
+
+export function listenToPresence(uid, callback) {
+  return onSnapshot(doc(db, "users", uid), (snap) => callback(snap.exists() ? snap.data() : null));
 }
