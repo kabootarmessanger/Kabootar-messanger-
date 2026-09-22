@@ -8,6 +8,7 @@ import {
 import Avatar from "./Avatar";
 import RealCallScreen from "./RealCallScreen";
 import RealGroupCallScreen from "./RealGroupCallScreen";
+import { sendPushNotification } from "@/lib/push";
 
 function formatLastSeen(lastSeen) {
   if (!lastSeen) return "";
@@ -102,6 +103,12 @@ export default function RealChatRoom({ chat, onClose }) {
     typingTimeout.current = setTimeout(() => setTyping(chat.id, user.uid, false), 3000);
   };
 
+  const notifyOthers = (bodyText) => {
+    const recipients = chat.participants.filter((p) => p !== user.uid);
+    const title = isGroup ? chat.name : user.displayName || "Kabootar";
+    recipients.forEach((uid) => sendPushNotification(uid, title, isGroup ? `${user.displayName || "Someone"}: ${bodyText}` : bodyText));
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     const t = text;
@@ -110,6 +117,7 @@ export default function RealChatRoom({ chat, onClose }) {
     setTyping(chat.id, user.uid, false);
     try {
       await sendRealMessage(chat.id, user.uid, t);
+      notifyOthers(t);
     } catch {
       setText(t); // roll back so the user doesn't lose what they typed
     }
@@ -125,6 +133,7 @@ export default function RealChatRoom({ chat, onClose }) {
     setUploading(true);
     try {
       await sendRealImage(chat.id, user.uid, file);
+      notifyOthers("📷 Photo");
     } catch {
       alert("Photo bhejne mein problem hui, dobara try karo");
     } finally {
@@ -139,6 +148,7 @@ export default function RealChatRoom({ chat, onClose }) {
     setUploading(true);
     try {
       await sendRealDocument(chat.id, user.uid, file);
+      notifyOthers(`📄 ${file.name}`);
     } catch {
       alert("File bhejne mein problem hui, dobara try karo");
     } finally {
@@ -163,6 +173,7 @@ export default function RealChatRoom({ chat, onClose }) {
           setUploading(true);
           try {
             await sendRealVoice(chat.id, user.uid, blob, sec);
+            notifyOthers("🎤 Voice message");
           } catch {
             alert("Voice note bhejne mein problem hui");
           } finally {

@@ -4,6 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { listenForIncomingCalls, listenForIncomingGroupCalls, updateCallDoc } from "@/lib/realCall";
 import { setOnlineStatus } from "@/lib/realChat";
+import { subscribeToPush } from "@/lib/push";
 import { ACCENT_COLORS, FONT_SIZES } from "@/data/seed";
 import TabBar from "./TabBar";
 import Toast from "./Toast";
@@ -59,6 +60,7 @@ export default function AppShell() {
   useEffect(() => {
     if (!user) return;
     setOnlineStatus(user.uid, true);
+    subscribeToPush(user.uid);
     const heartbeat = setInterval(() => {
       if (document.visibilityState === "visible") setOnlineStatus(user.uid, true);
     }, 25000);
