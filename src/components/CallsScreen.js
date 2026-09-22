@@ -1,19 +1,54 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import Avatar from "./Avatar";
 
-export default function CallsScreen({ onStartCall }) {
-  const { callLog, toggleTheme } = useApp();
+function durationToSec(d) {
+  if (!d) return 0;
+  const [m, s] = d.split(":").map(Number);
+  return (m || 0) * 60 + (s || 0);
+}
+function secToDuration(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+export default function CallsScreen({ onStartCall, onAvatarClick }) {
+  const { callLog, toggleTheme, profile } = useApp();
   const [filter, setFilter] = useState("all");
 
   const filtered = filter === "all" ? callLog : callLog.filter((c) => c.status === "missed");
+
+  const stats = useMemo(() => {
+    const total = callLog.length;
+    const video = callLog.filter((c) => c.type === "video").length;
+    const missed = callLog.filter((c) => c.status === "missed").length;
+    const durations = callLog.filter((c) => c.duration).map((c) => durationToSec(c.duration));
+    const avg = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+    return { total, video, missed, avg: secToDuration(avg) };
+  }, [callLog]);
 
   return (
     <div className="flex flex-col h-full">
       <div className="bg-primary text-white px-2 pt-[max(0.5rem,env(safe-area-inset-top))] min-h-14 flex items-center gap-0.5 shadow">
         <h1 className="text-xl font-semibold flex-1 px-3">Calls</h1>
+        <button onClick={onAvatarClick} className="mr-1"><Avatar src={profile.avatar} name={profile.name} size={32} /></button>
         <button onClick={toggleTheme} className="w-11 h-11 text-xl">🌙</button>
+      </div>
+      <div className="flex gap-2 px-3 pt-3 pb-1">
+        {[
+          { label: "Total", value: stats.total, icon: "📞", bg: "bg-orange-50 dark:bg-orange-500/10", fg: "text-orange-600" },
+          { label: "Video", value: stats.video, icon: "📹", bg: "bg-violet-50 dark:bg-violet-500/10", fg: "text-violet-600" },
+          { label: "Missed", value: stats.missed, icon: "📵", bg: "bg-red-50 dark:bg-red-500/10", fg: "text-red-500" },
+          { label: "Avg", value: stats.avg, icon: "⏱️", bg: "bg-sky-50 dark:bg-sky-500/10", fg: "text-sky-600" }
+        ].map((s) => (
+          <div key={s.label} className={`flex-1 rounded-2xl ${s.bg} py-3 flex flex-col items-center gap-1`}>
+            <span className="text-lg">{s.icon}</span>
+            <span className={`text-lg font-bold ${s.fg}`}>{s.value}</span>
+            <span className="text-[11px] text-app3">{s.label}</span>
+          </div>
+        ))}
       </div>
       <div className="flex gap-2 px-3 py-2.5 border-b border-app">
         {["all", "missed"].map((f) => (

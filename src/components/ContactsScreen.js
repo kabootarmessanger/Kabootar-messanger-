@@ -10,8 +10,8 @@ import Avatar from "./Avatar";
 import Modal from "./Modal";
 import RealChatRoom from "./RealChatRoom";
 
-export default function ContactsScreen({ onOpenChat }) {
-  const { contacts } = useApp();
+export default function ContactsScreen({ onOpenChat, onAvatarClick }) {
+  const { contacts, favoriteContacts, toggleFavoriteContact, showToast, chats, profile } = useApp();
   const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [findOpen, setFindOpen] = useState(false);
@@ -47,6 +47,26 @@ export default function ContactsScreen({ onOpenChat }) {
     () => contacts.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
     [contacts, query]
   );
+
+  const favContactObjs = useMemo(
+    () => favoriteContacts.map((name) => contacts.find((c) => c.name === name)).filter(Boolean),
+    [favoriteContacts, contacts]
+  );
+
+  const mutualGroupCount = (contactName) =>
+    chats.filter((c) => c.isGroup && c.members?.includes(contactName) && c.members?.includes(profile.name)).length;
+
+  const handleInvite = async () => {
+    const link = "https://kabootarmessanger.github.io/Kabootar-messanger-/";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Kabootar", text: "Chalo Kabootar pe chat karte hain!", url: link });
+      } catch {}
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(link);
+      showToast("Invite link copied");
+    }
+  };
 
   // People from your existing 1:1 real chats — the easiest pool to build a
   // group from, so you don't have to re-search everyone by phone again.
@@ -201,9 +221,35 @@ export default function ContactsScreen({ onOpenChat }) {
         >
           🌐
         </button>
+        <button onClick={onAvatarClick} className="shrink-0"><Avatar src={myProfile?.avatar} name={myProfile?.name || user?.displayName} size={36} /></button>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-24">
+        <div className="m-3.5 p-4 bg-primaryLight rounded-2xl flex items-center gap-3">
+          <span className="text-2xl shrink-0">👥</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-app">Invite Friends to Kabootar</div>
+            <div className="text-xs text-app3">Apna link share karo</div>
+          </div>
+          <button onClick={handleInvite} className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-full shrink-0">
+            Invite
+          </button>
+        </div>
+
+        {favContactObjs.length > 0 && (
+          <>
+            <div className="px-4 pt-1 pb-2 text-xs font-semibold text-primary">⭐ FAVORITES</div>
+            <div className="flex gap-4 px-4 pb-4 overflow-x-auto">
+              {favContactObjs.map((c) => (
+                <div key={c.name} onClick={() => c.reg && onOpenChat(c.name)} className="flex flex-col items-center gap-1 shrink-0 w-16 cursor-pointer">
+                  <Avatar src={c.avatar} name={c.name} size={56} />
+                  <span className="text-[11px] text-app2 truncate w-full text-center">{c.name.split(" ")[0]}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         {synced && (
           <>
             <div className="px-4 pt-4 pb-2 text-xs font-semibold text-primary">
@@ -273,7 +319,18 @@ export default function ContactsScreen({ onOpenChat }) {
               <div className="flex-1">
                 <div className="font-medium text-sm text-app">{c.name}</div>
                 <div className="text-xs text-app3 mt-0.5">{c.sub}</div>
+                {c.reg && mutualGroupCount(c.name) > 0 && (
+                  <div className="text-[11px] text-app3 mt-0.5">{mutualGroupCount(c.name)} mutual group{mutualGroupCount(c.name) > 1 ? "s" : ""}</div>
+                )}
               </div>
+              {c.reg && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleFavoriteContact(c.name); }}
+                  className={`text-lg px-1.5 ${favoriteContacts.includes(c.name) ? "text-amber-400" : "text-app3"}`}
+                >
+                  {favoriteContacts.includes(c.name) ? "★" : "☆"}
+                </button>
+              )}
               {!c.reg && <div className="text-[11px] text-app3">Invite</div>}
             </div>
           ))

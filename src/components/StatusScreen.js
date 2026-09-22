@@ -4,7 +4,7 @@ import { useApp } from "@/context/AppContext";
 import Avatar from "./Avatar";
 import StatusViewer from "./StatusViewer";
 
-export default function StatusScreen() {
+export default function StatusScreen({ onAvatarClick }) {
   const { statuses, setStatuses, toggleTheme, profile, showToast } = useApp();
   const [openIdx, setOpenIdx] = useState(null);
   const fileRef = useRef(null);
@@ -59,6 +59,7 @@ export default function StatusScreen() {
       <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={addStatus} />
       <div className="bg-primary text-white px-2 pt-[max(0.5rem,env(safe-area-inset-top))] min-h-14 flex items-center gap-0.5 shadow">
         <h1 className="text-xl font-semibold flex-1 px-3">Status</h1>
+        <button onClick={onAvatarClick} className="mr-1"><Avatar src={profile.avatar} name={profile.name} size={32} /></button>
         <button onClick={toggleTheme} className="w-11 h-11 text-xl">🌙</button>
       </div>
       <div className="flex-1 overflow-y-auto pb-24">
