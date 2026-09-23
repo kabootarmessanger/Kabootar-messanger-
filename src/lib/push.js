@@ -1,6 +1,6 @@
 // ── Fill these in after setting up Supabase (see the setup instructions) ──
-const SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+const SUPABASE_URL = "https://pbacqdlohwsskrtbjbiu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_j_3Scil9E8-NXRysIE2fjg_x37eHON9";
 const VAPID_PUBLIC_KEY = "BLFi1koUwjBuMbIPqGLbEeLnSL8dY8x55n99C5cQzXOLo80ai8R0IALF6lfwmeowYdOjav3H3gO9-KLAODsajPc";
 
 function urlBase64ToUint8Array(base64String) {
