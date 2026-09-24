@@ -6,7 +6,16 @@ export const metadata = {
   title: "🕊️ Kabootar",
   description: "Fast, private messaging for everyone.",
   manifest: "/manifest.json",
-  themeColor: "#C85A32"
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon-192.png"
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Kabootar"
+  }
 };
 
 export const viewport = {
@@ -14,7 +23,8 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover"
+  viewportFit: "cover",
+  themeColor: "#C85A32"
 };
 
 export default function RootLayout({ children }) {
