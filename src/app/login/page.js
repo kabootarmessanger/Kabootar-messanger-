@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { ensureUserDoc, normalizePhone } from "@/lib/realChat";
-import { signInAnonymously, updateProfile } from "firebase/auth";
+import {
+  signInAnonymously, updateProfile, EmailAuthProvider, linkWithCredential,
+  sendPasswordResetEmail, signInWithEmailAndPassword
+} from "firebase/auth";
 import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 // ── EmailJS setup (free, no backend needed) ──────────────────────────────
 // 1. Sign up free at https://www.emailjs.com
@@ -51,9 +53,11 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [recoverPassword, setRecoverPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState("form"); // form | otp
+  const [step, setStep] = useState("form"); // form | otp | recover-email | recover-password
 
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -117,9 +121,53 @@ export default function LoginPage() {
       await updateProfile(auth.currentUser, { displayName: data.name });
       await ensureUserDoc(auth.currentUser, { phoneNumber: data.phoneNumber, name: data.name });
       await deleteDoc(doc(db, "otp_requests", uid));
+
+      // Attach a real email credential to this anonymous account (using the
+      // OTP itself as the password, never shown as a "password" anywhere).
+      // This is what makes "recover my account on a new device" possible
+      // later — without this, the account is permanently tied to this
+      // browser only. If the email is already linked elsewhere (this
+      // person signed up before, on another device), linking fails — that's
+      // fine, their identity there is unaffected; they should use "Recover
+      // on a new device" instead of creating a fresh one.
+      try {
+        await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(data.email, otp.trim()));
+      } catch {
+        // best-effort — not fatal to signup
+      }
+
       router.push("/");
     } catch (err) {
       setError("Kuch galat ho gaya, dobara try karo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendRecoveryEmail = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setInfo(`Reset link ${email} pe bhej diya. Gmail kholo, link pe click karo, naya password set karo, phir yahan wapas aakar niche login karo.`);
+      setStep("recover-password");
+    } catch (err) {
+      setError("Ye email kisi account se linked nahi mili. Pehle normal signup try karo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecoverySignIn = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), recoverPassword);
+      router.push("/");
+    } catch (err) {
+      setError("Sign in nahi hua — pehle Gmail ke link se naya password set kar liya?");
     } finally {
       setLoading(false);
     }
@@ -131,13 +179,15 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[#C85A32]">🕊️ Kabootar</h1>
           <p className="text-gray-500 mt-2">
-            {step === "otp" ? "Gmail mein aaya code daalo" : "Mobile number se sign in karo"}
+            {step === "otp" && "Gmail mein aaya code daalo"}
+            {step === "form" && "Mobile number se sign in karo"}
+            {step === "recover-email" && "Naye device pe purana account lao"}
+            {step === "recover-password" && "Password set karne ke baad login karo"}
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-lg mb-4 text-sm text-center">{error}</div>
-        )}
+        {error && <div className="bg-red-50 text-red-500 p-3 rounded-lg mb-4 text-sm text-center">{error}</div>}
+        {info && <div className="bg-emerald-50 text-emerald-600 p-3 rounded-lg mb-4 text-sm text-center">{info}</div>}
 
         {step === "form" && (
           <form onSubmit={handleSendOtp} className="space-y-5">
@@ -173,6 +223,13 @@ export default function LoginPage() {
             >
               {loading ? "Bhej rahe hain…" : "OTP Bhejo"}
             </button>
+            <button
+              type="button"
+              onClick={() => { setError(""); setInfo(""); setStep("recover-email"); }}
+              className="w-full text-gray-500 text-sm"
+            >
+              Pehle se account hai (naye device pe)?
+            </button>
           </form>
         )}
 
@@ -193,11 +250,49 @@ export default function LoginPage() {
             >
               {loading ? "Check kar rahe hain…" : "Verify aur Login"}
             </button>
-            <button
-              type="button" onClick={() => setStep("form")}
-              className="w-full text-[#C85A32] text-sm font-semibold"
-            >
+            <button type="button" onClick={() => setStep("form")} className="w-full text-[#C85A32] text-sm font-semibold">
               Number ya email badalna hai?
+            </button>
+          </form>
+        )}
+
+        {step === "recover-email" && (
+          <form onSubmit={handleSendRecoveryEmail} className="space-y-5">
+            <p className="text-sm text-gray-600 text-center">
+              Jis Gmail se pehle signup kiya tha wahi daalo — ek reset-link jayega.
+            </p>
+            <input
+              type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
+              placeholder="you@gmail.com"
+            />
+            <button
+              type="submit" disabled={loading}
+              className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-70"
+            >
+              {loading ? "Bhej rahe hain…" : "Reset Link Bhejo"}
+            </button>
+            <button type="button" onClick={() => { setError(""); setStep("form"); }} className="w-full text-[#C85A32] text-sm font-semibold">
+              Wapas jao
+            </button>
+          </form>
+        )}
+
+        {step === "recover-password" && (
+          <form onSubmit={handleRecoverySignIn} className="space-y-5">
+            <input
+              type="password" required value={recoverPassword} onChange={(e) => setRecoverPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
+              placeholder="Wo naya password jo Gmail link se set kiya"
+            />
+            <button
+              type="submit" disabled={loading}
+              className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-70"
+            >
+              {loading ? "Sign in ho raha hai…" : "Login"}
+            </button>
+            <button type="button" onClick={() => { setError(""); setInfo(""); setStep("form"); }} className="w-full text-[#C85A32] text-sm font-semibold">
+              Wapas jao
             </button>
           </form>
         )}
