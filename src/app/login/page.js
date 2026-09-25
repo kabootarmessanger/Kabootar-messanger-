@@ -5,48 +5,12 @@ import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { ensureUserDoc, normalizePhone } from "@/lib/realChat";
+import { sendFlashCall, verifyFlashCall } from "@/lib/flashCall";
 import {
   signInAnonymously, updateProfile, EmailAuthProvider, linkWithCredential,
   sendPasswordResetEmail, signInWithEmailAndPassword
 } from "firebase/auth";
 import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
-
-// ── EmailJS setup (free, no backend needed) ──────────────────────────────
-// 1. Sign up free at https://www.emailjs.com
-// 2. Email Services → Add New Service → connect your Gmail → copy the
-//    "Service ID"
-// 3. Email Templates → Create New Template. Body must include these
-//    variables so the OTP actually shows up in the email:
-//      To: {{to_email}}
-//      Subject: Your Kabootar login code
-//      Body: Hi {{to_name}}, your Kabootar code is {{otp_code}}. It expires
-//            in 10 minutes.
-//    Copy the "Template ID".
-// 4. Account → General → copy your "Public Key".
-// 5. Account → Security → Allowed origins → add your GitHub Pages domain
-//    (e.g. kabootarmessanger.github.io) so the request isn't blocked.
-// 6. Paste all three below.
-const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
-
-function genOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-async function sendOtpEmail(toEmail, toName, code) {
-  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      service_id: EMAILJS_SERVICE_ID,
-      template_id: EMAILJS_TEMPLATE_ID,
-      user_id: EMAILJS_PUBLIC_KEY,
-      template_params: { to_email: toEmail, to_name: toName, otp_code: code }
-    })
-  });
-  if (!res.ok) throw new Error("Email bhejne mein problem hui");
-}
 
 export default function LoginPage() {
   const [name, setName] = useState("");
@@ -62,9 +26,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  // Already signed in (this device already completed OTP before)? Skip
-  // straight into the app — this is what makes returning to the SAME
-  // device feel instant, no OTP needed again.
   useEffect(() => {
     if (!authLoading && user) {
       router.replace("/");
@@ -76,19 +37,17 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      // Anonymous session first — this is what makes this device "this
-      // account" going forward, and lets us securely store the OTP under
-      // this uid (Firestore rules only let a uid touch its own OTP doc).
       const cred = await signInAnonymously(auth);
-      const code = genOtp();
+      const normalizedPhone = normalizePhone(phone);
+      const sessionId = await sendFlashCall(normalizedPhone);
+
       await setDoc(doc(db, "otp_requests", cred.user.uid), {
-        code,
+        sessionId,
         name: name.trim(),
-        phoneNumber: normalizePhone(phone),
+        phoneNumber: normalizedPhone,
         email: email.trim().toLowerCase(),
         expiresAt: Date.now() + 10 * 60 * 1000
       });
-      await sendOtpEmail(email.trim(), name.trim(), code);
       setStep("otp");
     } catch (err) {
       setError(err.message || "Kuch galat ho gaya, dobara try karo");
@@ -105,40 +64,57 @@ export default function LoginPage() {
       const uid = auth.currentUser?.uid;
       const snap = await getDoc(doc(db, "otp_requests", uid));
       if (!snap.exists()) {
-        setError("Session expire ho gaya, dobara number/email daalo");
+        setError("Session expire ho gaya, dobara number daalo");
         setStep("form");
         return;
       }
       const data = snap.data();
       if (Date.now() > data.expiresAt) {
-        setError("OTP expire ho gaya, naya bhejo");
+        setError("OTP expire ho gaya, naya call mangwao");
         return;
       }
-      if (data.code !== otp.trim()) {
+
+      const ok = await verifyFlashCall(data.sessionId, otp.trim());
+      if (!ok) {
         setError("Galat OTP, dobara check karo");
         return;
       }
+
       await updateProfile(auth.currentUser, { displayName: data.name });
       await ensureUserDoc(auth.currentUser, { phoneNumber: data.phoneNumber, name: data.name });
       await deleteDoc(doc(db, "otp_requests", uid));
 
-      // Attach a real email credential to this anonymous account (using the
-      // OTP itself as the password, never shown as a "password" anywhere).
-      // This is what makes "recover my account on a new device" possible
-      // later — without this, the account is permanently tied to this
-      // browser only. If the email is already linked elsewhere (this
-      // person signed up before, on another device), linking fails — that's
-      // fine, their identity there is unaffected; they should use "Recover
-      // on a new device" instead of creating a fresh one.
-      try {
-        await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(data.email, otp.trim()));
-      } catch {
-        // best-effort — not fatal to signup
+      if (data.email) {
+        try {
+          await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(data.email, otp.trim()));
+        } catch {
+          // best-effort — not fatal to signup
+        }
       }
 
       router.push("/");
     } catch (err) {
-      setError("Kuch galat ho gaya, dobara try karo");
+      setError(err.message || "Kuch galat ho gaya, dobara try karo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCall = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const uid = auth.currentUser?.uid;
+      const normalizedPhone = normalizePhone(phone);
+      const sessionId = await sendFlashCall(normalizedPhone);
+      await setDoc(
+        doc(db, "otp_requests", uid),
+        { sessionId, expiresAt: Date.now() + 10 * 60 * 1000 },
+        { merge: true }
+      );
+      setInfo("Naya call bheja — phone uthao, OTP suno.");
+    } catch (err) {
+      setError(err.message || "Call dobara bhejne mein problem hui");
     } finally {
       setLoading(false);
     }
@@ -179,7 +155,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[#C85A32]">🕊️ Kabootar</h1>
           <p className="text-gray-500 mt-2">
-            {step === "otp" && "Gmail mein aaya code daalo"}
+            {step === "otp" && "Call pe aaya code daalo"}
             {step === "form" && "Mobile number se sign in karo"}
             {step === "recover-email" && "Naye device pe purana account lao"}
             {step === "recover-password" && "Password set karne ke baad login karo"}
@@ -206,22 +182,22 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
                 placeholder="+91 98765 43210"
               />
-              <p className="text-xs text-gray-400 mt-1">Dusre log isi number se aapko dhoondh kar message karenge.</p>
+              <p className="text-xs text-gray-400 mt-1">Is number pe ek call aayega, usme OTP bola jayega.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gmail / Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Gmail / Email (optional — sirf recovery ke liye)</label>
               <input
-                type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#C85A32] focus:ring-2 focus:ring-[#C85A32]/20 outline-none transition-all"
                 placeholder="you@gmail.com"
               />
-              <p className="text-xs text-gray-400 mt-1">6-digit code isi Gmail pe aayega.</p>
+              <p className="text-xs text-gray-400 mt-1">Naye phone pe account wapas lane ke kaam aayega.</p>
             </div>
             <button
               type="submit" disabled={loading}
               className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-70"
             >
-              {loading ? "Bhej rahe hain…" : "OTP Bhejo"}
+              {loading ? "Call bhej rahe hain…" : "Verification Call Mangwao"}
             </button>
             <button
               type="button"
@@ -236,7 +212,7 @@ export default function LoginPage() {
         {step === "otp" && (
           <form onSubmit={handleVerifyOtp} className="space-y-5">
             <p className="text-sm text-gray-600 text-center">
-              <strong>{email}</strong> pe 6-digit code bheja hai
+              <strong>{phone}</strong> pe call ja raha hai — phone uthao, jo digits bole jaayen wahi yahan daalo
             </p>
             <input
               type="text" inputMode="numeric" maxLength={6} required
@@ -245,13 +221,19 @@ export default function LoginPage() {
               placeholder="000000"
             />
             <button
-              type="submit" disabled={loading || otp.length !== 6}
+              type="submit" disabled={loading || otp.length < 4}
               className="w-full bg-[#C85A32] hover:bg-[#A84A28] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-70"
             >
               {loading ? "Check kar rahe hain…" : "Verify aur Login"}
             </button>
-            <button type="button" onClick={() => setStep("form")} className="w-full text-[#C85A32] text-sm font-semibold">
-              Number ya email badalna hai?
+            <button
+              type="button" onClick={handleResendCall} disabled={loading}
+              className="w-full text-[#C85A32] text-sm font-semibold"
+            >
+              Call nahi aaya? Dobara mangwao
+            </button>
+            <button type="button" onClick={() => setStep("form")} className="w-full text-gray-400 text-sm">
+              Number badalna hai?
             </button>
           </form>
         )}
@@ -299,4 +281,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-}
+                          }
