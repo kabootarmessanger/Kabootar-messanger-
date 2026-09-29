@@ -8,19 +8,28 @@ import { getStorage } from "firebase/storage";
 // ship in the frontend bundle; access is controlled via Firestore/Storage
 // security rules, not by hiding this object).
 //
-// Reads from NEXT_PUBLIC_FIREBASE_* env vars when set (so you can point a
-// staging/production build at a different Firebase project without
-// touching code), falling back to this repo's own project so the app still
-// runs with zero setup.
+// Read entirely from NEXT_PUBLIC_FIREBASE_* env vars (see .env.example) so
+// every deploy points at its own Firebase project explicitly — no bundled
+// fallback project, so a fork can never accidentally write into someone
+// else's database.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBzah8Uk_kw-yNa3830v_OCtF6_KPZNA8E",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "kabootar-messanger.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "kabootar-messanger",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "kabootar-messanger.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "584989256409",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:584989256409:web:15298698cdcac68425ecc8",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-NK64DVWTMG"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  // Fails loudly at build/boot time instead of Firebase throwing a cryptic
+  // "invalid-api-key" error deep inside a component later.
+  throw new Error(
+    "Firebase config missing: copy .env.example to .env.local and fill in " +
+    "your own Firebase project's NEXT_PUBLIC_FIREBASE_* values."
+  );
+}
 
 // Avoid re-initializing on hot reload / multiple imports.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
