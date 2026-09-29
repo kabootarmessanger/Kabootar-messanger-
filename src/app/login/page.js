@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { ensureUserDoc, normalizePhone } from "@/lib/realChat";
-import { sendFlashCall, verifyFlashCall } from "@/lib/flashCall";
+import { ensureUserDoc } from "@/lib/realChat";
+import { sendFlashCall, verifyFlashCall, toE164 } from "@/lib/flashCall";
 import {
-  signInAnonymously, updateProfile, EmailAuthProvider, linkWithCredential,
-  sendPasswordResetEmail, signInWithEmailAndPassword
+  signInWithCustomToken, updateProfile,
+  sendPasswordResetEmail, signInWithEmailAndPassword, linkWithCredential, EmailAuthProvider
 } from "firebase/auth";
-import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 
+// Phone number is the account's identity (see worker/firebaseToken.js —
+// the Firebase uid is derived deterministically from it), so logging in
+// again with the same verified number on any device restores the account.
+// Email is optional and only used as a password-recovery path.
 export default function LoginPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -22,6 +25,7 @@ export default function LoginPage() {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("form"); // form | otp | recover-email | recover-password
+  const [challenge, setChallenge] = useState("");
 
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -37,17 +41,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const cred = await signInAnonymously(auth);
-      const normalizedPhone = normalizePhone(phone);
-      const sessionId = await sendFlashCall(normalizedPhone);
-
-      await setDoc(doc(db, "otp_requests", cred.user.uid), {
-        sessionId,
-        name: name.trim(),
-        phoneNumber: normalizedPhone,
-        email: email.trim().toLowerCase(),
-        expiresAt: Date.now() + 10 * 60 * 1000
-      });
+      const normalizedPhone = toE164(phone);
+      const ch = await sendFlashCall(normalizedPhone);
+      setChallenge(ch);
       setStep("otp");
     } catch (err) {
       setError(err.message || "Kuch galat ho gaya, dobara try karo");
@@ -61,40 +57,26 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const uid = auth.currentUser?.uid;
-      const snap = await getDoc(doc(db, "otp_requests", uid));
-      if (!snap.exists()) {
-        setError("Session expire ho gaya, dobara number daalo");
-        setStep("form");
-        return;
-      }
-      const data = snap.data();
-      if (Date.now() > data.expiresAt) {
-        setError("OTP expire ho gaya, naya call mangwao");
-        return;
-      }
+      const { customToken } = await verifyFlashCall(challenge, otp.trim());
+      const cred = await signInWithCustomToken(auth, customToken);
 
-      const ok = await verifyFlashCall(data.sessionId, otp.trim());
-      if (!ok) {
-        setError("Galat OTP, dobara check karo");
-        return;
-      }
+      if (name.trim()) await updateProfile(cred.user, { displayName: name.trim() });
+      await ensureUserDoc(cred.user, { phoneNumber: toE164(phone), name: name.trim() });
 
-      await updateProfile(auth.currentUser, { displayName: data.name });
-      await ensureUserDoc(auth.currentUser, { phoneNumber: data.phoneNumber, name: data.name });
-      await deleteDoc(doc(db, "otp_requests", uid));
-
-      if (data.email) {
+      if (email.trim()) {
         try {
-          await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(data.email, otp.trim()));
+          // Best-effort: lets this account also be recovered via email+password
+          // later (see handleSendRecoveryEmail). Not fatal if it fails (e.g.
+          // that email is already linked to a different account).
+          await linkWithCredential(cred.user, EmailAuthProvider.credential(email.trim().toLowerCase(), otp.trim()));
         } catch {
-          // best-effort — not fatal to signup
+          // non-fatal — phone login still succeeded
         }
       }
 
       router.push("/");
     } catch (err) {
-      setError(err.message || "Kuch galat ho gaya, dobara try karo");
+      setError(err.message || "Galat OTP ya session expire ho gaya");
     } finally {
       setLoading(false);
     }
@@ -104,14 +86,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const uid = auth.currentUser?.uid;
-      const normalizedPhone = normalizePhone(phone);
-      const sessionId = await sendFlashCall(normalizedPhone);
-      await setDoc(
-        doc(db, "otp_requests", uid),
-        { sessionId, expiresAt: Date.now() + 10 * 60 * 1000 },
-        { merge: true }
-      );
+      const normalizedPhone = toE164(phone);
+      const ch = await sendFlashCall(normalizedPhone);
+      setChallenge(ch);
       setInfo("Naya call bheja — phone uthao, OTP suno.");
     } catch (err) {
       setError(err.message || "Call dobara bhejne mein problem hui");
@@ -281,4 +258,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-                          }
+}
