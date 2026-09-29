@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Chat media (images/voice/docs) — only the chat's participants may
+    // upload or read, and only into that chat's own folder.
+    match /chats/{chatId}/{allPaths=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid in firestore.get(/databases/(default)/documents/chats/$(chatId)).data.participants
+        && request.resource.size < 25 * 1024 * 1024; // 25MB cap per file
+    }
+
+    // Profile photos: anyone signed in can view (needed to show avatars in
+    // chats/contacts), only the owner can upload their own.
+    match /avatars/{uid}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Deny everything else.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

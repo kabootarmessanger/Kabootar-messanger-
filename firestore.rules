@@ -3,19 +3,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Har user apni khud ki profile likh sakta hai, sabki profile padh sakta hai
-    // (email se doosron ko dhoondhne ke liye zaroori hai).
+    // (phone/email se doosron ko dhoondhne ke liye zaroori hai). uid sirf
+    // server-minted Firebase custom token se milta hai (worker/otp.js), jo
+    // uid ko verified phone number se deterministically derive karta hai —
+    // isliye ek user doosre ke uid ka profile kabhi overwrite nahi kar sakta.
     match /users/{uid} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Signup OTP: only the device that requested it (same anonymous uid)
-    // can read or delete it — nobody else can see someone else's code.
-    match /otp_requests/{uid} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
-    }
-
-    // Sirf chat ke dono participants hi us chat ko padh/likh sakte hain.
+    // Sirf chat ke dono/sabhi participants hi us chat ko padh/likh sakte hain.
     match /chats/{chatId} {
       allow read, update: if request.auth != null
                            && request.auth.uid in resource.data.participants;
@@ -23,19 +20,27 @@ service cloud.firestore {
                     && request.auth.uid in request.resource.data.participants;
 
       match /messages/{messageId} {
-        allow read, create: if request.auth != null
-                             && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow read: if request.auth != null
+                    && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        // A message can only be authored by whoever is sending it, and only
+        // inside a chat they're actually part of.
+        allow create: if request.auth != null
+                      && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+                      && request.resource.data.senderId == request.auth.uid;
       }
     }
 
     // WebRTC call signaling: only the caller/callee can read or update a
     // call, and only the caller can create it. ICE candidates are short-
-    // lived signaling data — any signed-in user may read/write them.
+    // lived signaling data scoped to a call only its participants know the
+    // id of, so any signed-in user may add/read them for that call id.
     match /calls/{callId} {
       allow read, update: if request.auth != null
-                           && request.auth.uid in [resource.data.callerId, resource.data.calleeId];
+                           && (request.auth.uid in [resource.data.callerId, resource.data.calleeId]
+                               || request.auth.uid in resource.data.get('participants', []));
       allow create: if request.auth != null
-                    && request.auth.uid == request.resource.data.callerId;
+                    && (request.auth.uid == request.resource.data.get('callerId', null)
+                        || request.auth.uid == request.resource.data.get('starterId', null));
 
       match /offerCandidates/{candidateId} {
         allow read, write: if request.auth != null;
@@ -43,6 +48,21 @@ service cloud.firestore {
       match /answerCandidates/{candidateId} {
         allow read, write: if request.auth != null;
       }
+
+      // Group-call presence + per-pair mesh signaling (see src/lib/realCall.js).
+      match /joined/{uid} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+      match /pairs/{pairId} {
+        allow read, write: if request.auth != null;
+        match /{subcollection}/{candidateId} {
+          allow read, write: if request.auth != null;
+        }
+      }
     }
+
+    // Deny everything else by default (implicit in Firestore rules — no
+    // catch-all match needed — but spelled out here as documentation).
   }
 }

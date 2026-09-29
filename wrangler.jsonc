@@ -7,5 +7,23 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
+  },
+
+  // Non-secret config. Secrets (TWOFACTOR_API_KEY, OTP_HMAC_SECRET,
+  // FIREBASE_SERVICE_ACCOUNT) are NOT set here — see README "Deploy" section
+  // for `wrangler secret put`.
+  "vars": {
+    "ALLOWED_COUNTRY_CODES": "+91",
+    "ALLOWED_ORIGIN": "https://your-domain.example"
+  },
+
+  // Cloudflare's built-in Rate Limiting binding — free on all plans, no extra
+  // service to provision. Caps voice-call OTP requests (toll fraud) and OTP
+  // guesses (brute force) per IP / per phone / per session.
+  "unsafe": {
+    "bindings": [
+      { "name": "OTP_SEND_LIMITER", "type": "ratelimit", "namespace_id": "1001", "simple": { "limit": 3, "period": 60 } },
+      { "name": "OTP_VERIFY_LIMITER", "type": "ratelimit", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+    ]
   }
 }
